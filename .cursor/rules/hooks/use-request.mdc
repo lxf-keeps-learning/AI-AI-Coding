@@ -1,0 +1,17 @@
+---
+description: useRequest：缓存、轮询、依赖与取消
+alwaysApply: false
+---
+
+生成请求 hooks 时：
+
+要求：
+- loading
+- error
+- retry
+- cancel
+- 防重复请求
+- TS 类型完整
+
+优先使用：
+- request 封装

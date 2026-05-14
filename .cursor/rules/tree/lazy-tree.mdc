@@ -1,0 +1,10 @@
+---
+description: 懒加载树：异步子节点、loading 与错误重试
+alwaysApply: false
+---
+
+## Lazy Tree
+
+- 展开时请求子节点；失败可重试且不打断其他分支。
+- 子节点缓存与刷新策略（增删改后局部失效）明确。
+- 占位 skeleton 与空子节点文案区分。

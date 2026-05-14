@@ -1,0 +1,18 @@
+---
+description: 图表通用：主题、空数据、响应式与可访问性
+alwaysApply: false
+---
+
+要求：
+- resize
+- loading
+- 自动销毁
+- dark mode
+- hooks 化
+- 支持实时刷新
+
+性能要求：
+- 避免重复 setOption
+- 大数据节流
+- 增量更新
+- 防止内存泄漏

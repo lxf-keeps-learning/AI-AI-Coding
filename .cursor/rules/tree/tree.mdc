@@ -1,0 +1,17 @@
+---
+description: 树：展开默认、搜索定位与图标语义
+alwaysApply: false
+---
+
+生成 Tree 组件时：
+
+要求：
+- 支持搜索
+- checkbox
+- 展开收起
+- lazy load
+- hooks 化
+- 类型完整
+
+优先复用：
+- BaseTree

@@ -1,0 +1,10 @@
+---
+description: useDialog：可见性、payload 与 Promise 化关闭
+alwaysApply: false
+---
+
+## useDialog
+
+- open/close 与 visible 状态单一来源；避免父子双控。
+- 传递 record 或 id 时类型明确；关闭时清理表单与定时器。
+- 若支持 await 确认结果，reject/resolve 边界文档化。

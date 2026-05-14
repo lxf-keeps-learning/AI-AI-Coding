@@ -1,0 +1,21 @@
+---
+description: 大数据：分片、Worker 与主线程预算
+alwaysApply: false
+---
+
+## Large Data
+
+- 主线程计算分片 requestIdleCallback 或 Worker；避免长时间阻塞。
+- 传输层压缩与分页；前端解析大 JSON 流式或增量。
+- 进度反馈与可取消；失败可断点续传（按需）。
+
+处理大数据场景时：
+
+重点：
+- 虚拟滚动
+- WebWorker
+- computed 缓存
+- 防抖节流
+- 避免深层响应式
+- 避免大对象 reactive
+- 拆分组件渲染

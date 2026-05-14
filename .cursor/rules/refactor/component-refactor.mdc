@@ -1,0 +1,22 @@
+---
+description: 组件重构：API 兼容、迁移与渐进替换
+alwaysApply: false
+---
+
+## Component Refactor
+
+- 对外 Props 变更提供适配层或 deprecation 周期。
+- 行为变更补充单测或 E2E；Story/文档同步更新。
+- 分步合并，每步可独立发布与回滚。
+
+重构组件时：
+
+要求：
+- 不改变业务逻辑
+- 提升复用性
+- hooks 化
+- 提升类型安全
+- 减少重复代码
+- 优化性能
+- 降低耦合
+- 提取公共能力

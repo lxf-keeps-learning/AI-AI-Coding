@@ -1,0 +1,10 @@
+---
+description: 动态表单：Schema 驱动、联动与默认值
+alwaysApply: false
+---
+
+## Dynamic Form
+
+- Schema 变更时重置依赖字段；联动规则可测试、可文档化。
+- 默认值与 options 异步加载时的 loading 与空态。
+- 与后端字段类型映射一致，避免静默截断或精度丢失。

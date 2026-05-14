@@ -1,0 +1,10 @@
+---
+description: 文件、变量、组件命名规范
+alwaysApply: false
+---
+
+## 命名
+
+- 文件名：与导出主体一致；组件使用 PascalCase，工具使用 camelCase 或 kebab-case（与项目一致）。
+- 布尔变量使用 is/has/can 前缀；事件处理 on/handle 前缀与项目统一。
+- 避免无意义缩写，类型与接口命名清晰可搜。

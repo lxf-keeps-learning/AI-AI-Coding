@@ -1,0 +1,10 @@
+---
+description: 可勾选树：半选态、禁用节点与回填
+alwaysApply: false
+---
+
+## Check Tree
+
+- 半选态与全选逻辑符合用户预期；禁用节点不可变更勾选。
+- 受控模式下 checkedKeys 与展开 keys 数据源清晰。
+- 表单回填时 id 与整棵树数据一致，避免孤儿勾选。

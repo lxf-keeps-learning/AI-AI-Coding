@@ -1,0 +1,17 @@
+---
+description: 基础查询：关键字、简单筛选与请求合并
+alwaysApply: false
+---
+
+## 生成搜索区域时：
+
+要求：
+- 展开收起
+- reset/search
+- 响应式布局
+- slot 扩展
+- 与 table 联动
+- 参数自动格式化
+
+优先使用：
+- BaseSearch

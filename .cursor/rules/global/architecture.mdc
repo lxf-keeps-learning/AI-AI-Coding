@@ -1,0 +1,16 @@
+架构规范：
+
+目录规范：
+- views：页面
+- components：业务组件
+- hooks：逻辑抽离
+- services：接口
+- types：类型
+- utils：工具函数
+
+要求：
+- 页面只负责业务组织
+- hooks 负责逻辑复用
+- services 统一请求管理
+- types 独立维护
+- 避免页面存在大量业务逻辑

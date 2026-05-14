@@ -1,0 +1,10 @@
+---
+description: 大屏图表：自动轮播、高对比与刷新节奏
+alwaysApply: false
+---
+
+## Bigscreen Chart
+
+- 字体与线宽按视距放大；暗色背景下对比度足够。
+- 自动轮播 tooltip 可关闭；数据刷新间隔可配置。
+- 与布局 scale 组合时保持清晰，避免模糊与锯齿。

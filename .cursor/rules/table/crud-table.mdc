@@ -1,0 +1,19 @@
+---
+description: CRUD 表格：增删改查、行操作与权限
+alwaysApply: false
+---
+
+生成表格时：
+
+要求：
+- 使用 useTable
+- loading
+- pagination
+- selection
+- column config
+- 空状态
+- hooks 化
+
+性能要求：
+- 避免重复渲染
+- 避免深层 watch

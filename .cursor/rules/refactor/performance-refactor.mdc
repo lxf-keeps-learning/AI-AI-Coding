@@ -1,0 +1,10 @@
+---
+description: 性能重构：测量驱动、对比与回滚预案
+alwaysApply: false
+---
+
+## Performance Refactor
+
+- 先 profiling 再优化；优化前后有指标对比（LCP、TTI、内存等）。
+- 避免过早抽象；优化点与业务场景绑定说明。
+- 保留特性开关或配置项便于回滚。

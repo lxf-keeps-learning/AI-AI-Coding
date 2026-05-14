@@ -1,0 +1,10 @@
+---
+description: 预览：Office/PDF/图片/视频与沙箱安全
+alwaysApply: false
+---
+
+## Preview
+
+- 按 MIME 选择预览方式；不支持格式给出下载或友好提示。
+- 外链资源注意 CSP 与 XSS；大文件懒加载或分页加载。
+- 打印与全屏模式不破坏布局与工具栏可用性。

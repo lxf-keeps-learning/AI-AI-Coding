@@ -1,0 +1,10 @@
+---
+description: Hooks 重构：依赖数组、稳定性与复用粒度
+alwaysApply: false
+---
+
+## Hooks Refactor
+
+- 返回值与参数形状稳定；breaking change 升级主版本或别名导出。
+- 避免单 hook 职责过多；可组合小 hook 而非上帝 hook。
+- 单测覆盖边界状态与卸载清理。

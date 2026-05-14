@@ -1,0 +1,10 @@
+---
+description: 内存：监听、定时器、闭包与大对象
+alwaysApply: false
+---
+
+## Memory
+
+- useEffect 清理事件、订阅、定时器与第三方实例（地图、图表）。
+- 避免在模块级缓存无限增长的数据结构；LRU 或分页释放。
+- 分析堆快照定位 Detached DOM 与重复闭包引用。

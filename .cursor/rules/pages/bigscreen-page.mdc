@@ -1,0 +1,15 @@
+---
+description: 大屏：布局缩放、数据刷新与动效克制
+alwaysApply: false
+---
+
+生成大屏页面时：
+
+要求：
+- DataV/ECharts
+- resize 自适应
+- 大数据性能优化
+- dark mode
+- 自动 cleanup
+- 避免频繁 setOption
+- 支持实时刷新

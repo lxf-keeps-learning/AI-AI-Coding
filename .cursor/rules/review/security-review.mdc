@@ -1,0 +1,10 @@
+---
+description: 安全审查：XSS、CSRF、权限与敏感数据
+alwaysApply: false
+---
+
+## Security Review
+
+- 用户输入渲染是否转义；富文本白名单策略。
+- 敏感操作鉴权与 CSRF Token；接口错误信息不泄露内部细节。
+- 密钥与 token 不入前端仓库与日志；上传与下载鉴权一致。

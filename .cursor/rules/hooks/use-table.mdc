@@ -1,0 +1,10 @@
+---
+description: useTable：分页、排序、筛选与请求封装
+alwaysApply: false
+---
+
+## useTable
+
+- 分页参数命名与后端统一；页码变化时取消过时请求。
+- 排序与筛选变更重置页码；loading 与 error 状态暴露完整。
+- 刷新、重置、静默轮询等 API 语义单一不重叠。

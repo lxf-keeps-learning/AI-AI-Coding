@@ -1,0 +1,15 @@
+---
+description: 标准表单：字段布局、校验与提交流程
+alwaysApply: false
+---
+
+生成组件时：
+
+要求：
+- 单一职责
+- props/emits 类型完整
+- loading/empty/error
+- 支持 dark mode
+- 可复用
+- 禁止业务强耦合
+- hooks 化

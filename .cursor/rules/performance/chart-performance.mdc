@@ -1,0 +1,10 @@
+---
+description: 图表性能：数据量、动画与 WebGL 降级
+alwaysApply: false
+---
+
+## Chart Performance
+
+- 超阈值自动采样或聚合；tooltip 节流。
+- 动画时长与同时渲染图表数量平衡；隐藏 tab 内图表延迟初始化。
+- WebGL 不可用时降级 Canvas/SVG 并提示（按需）。

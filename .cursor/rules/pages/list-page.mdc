@@ -1,0 +1,20 @@
+---
+description: 列表页：表格、分页、筛选、空态与加载
+alwaysApply: false
+---
+
+生成列表页时：
+
+必须包含：
+- BaseSearch
+- Table
+- Pagination
+- loading/error
+- hooks 化
+- services
+- types
+
+优先复用：
+- useTable
+- BaseSearch
+- Dialog

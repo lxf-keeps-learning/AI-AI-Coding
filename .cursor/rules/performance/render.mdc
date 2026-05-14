@@ -1,0 +1,10 @@
+---
+description: 渲染性能：memo、列表 key 与不必要更新
+alwaysApply: false
+---
+
+## Render
+
+- 列表项稳定 key；大组件用 memo/useMemo 需有测量依据。
+- 避免在 render 中创建新对象/函数导致子组件全量更新。
+- 长列表优先虚拟化或分页，而非单纯压缩样式。

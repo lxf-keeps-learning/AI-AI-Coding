@@ -1,0 +1,10 @@
+---
+description: 页面重构：路由、状态与数据流整理
+alwaysApply: false
+---
+
+## Page Refactor
+
+- 拆分前梳理数据依赖与副作用；避免双请求源。
+- URL 与本地状态边界清晰；面包屑与标题同步。
+- 大文件按 feature 分目录，避免循环依赖。
