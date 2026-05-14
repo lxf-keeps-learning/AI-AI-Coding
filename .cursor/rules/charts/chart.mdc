@@ -1,18 +1,76 @@
 ---
-description: 图表通用：主题、空数据、响应式与可访问性
+description: 图表：BaseChart 组件 + useChart hook 使用规范
 alwaysApply: false
 ---
 
-要求：
-- resize
-- loading
-- 自动销毁
-- dark mode
-- hooks 化
-- 支持实时刷新
+## Chart 规范
 
-性能要求：
-- 避免重复 setOption
-- 大数据节流
-- 增量更新
-- 防止内存泄漏
+### 必须使用
+
+- 简单图表（传配置）：`src/ai-kit/charts/BaseChart.vue`
+- 复杂交互图表（需要实例控制）：`src/ai-kit/hooks/useChart.ts`
+
+### 禁止
+
+- 禁止在组件内裸调用 `echarts.init`
+- 禁止不销毁（必须 onUnmounted dispose）
+- 禁止频繁 setOption（useChart 内置节流）
+
+### 方式一：BaseChart 组件（推荐，适合大多数场景）
+
+```vue
+<script setup lang="ts">
+import BaseChart from '@/ai-kit/charts/BaseChart.vue'
+import { useRequest } from '@/ai-kit/hooks/useRequest'
+import { computed } from 'vue'
+
+const { data, loading } = useRequest(getChartData, { immediate: true })
+
+const option = computed(() => ({
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: data.value?.labels ?? [] },
+  yAxis: { type: 'value' },
+  series: [{ type: 'line', data: data.value?.values ?? [], smooth: true }],
+}))
+</script>
+
+<template>
+  <BaseChart :option="option" :loading="loading" height="300px" />
+</template>
+```
+
+### 方式二：useChart hook（适合需要事件绑定、动态更新的复杂图表）
+
+```vue
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useChart } from '@/ai-kit/hooks/useChart'
+
+const chartEl = ref<HTMLDivElement>()
+const { setOption, showLoading, hideLoading } = useChart(chartEl)
+
+onMounted(() => {
+  setOption({
+    series: [{ type: 'bar', data: [1, 2, 3] }]
+  })
+})
+</script>
+
+<template>
+  <div ref="chartEl" style="height: 300px; width: 100%" />
+</template>
+```
+
+### 性能要求
+
+- setOption 使用节流（useChart 默认 200ms，实时数据可调整）
+- 大数据集用 dataset 或增量更新，避免全量 setOption
+- ResizeObserver 自动处理容器尺寸变化（BaseChart / useChart 内置）
+- 组件销毁时自动 dispose（useChart 内置 onUnmounted）
+
+### 要求清单
+
+- [ ] loading 状态：数据加载期间显示骨架/loading
+- [ ] 空数据：option 为空时显示空状态
+- [ ] 响应式：容器 resize 自动重绘
+- [ ] 内存安全：组件销毁时 dispose

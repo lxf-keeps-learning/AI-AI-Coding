@@ -1,19 +1,52 @@
 ---
-description: CRUD 表格：增删改查、行操作与权限
+description: CRUD 列表页：标准结构、useTable + useDialog + BaseSearch
 alwaysApply: false
 ---
 
-生成表格时：
+## CRUD 列表页规范
 
-要求：
-- 使用 useTable
-- loading
-- pagination
-- selection
-- column config
-- 空状态
-- hooks 化
+### 必须参考
 
-性能要求：
-- 避免重复渲染
-- 避免深层 watch
+`src/ai-kit/components/list-page-template.vue` —— 所有列表页的标准模板
+
+### 必须使用的 Hooks & 组件
+
+- `useTable` → 表格数据、分页、loading、selection
+- `useSearch` → 搜索参数管理、防抖、reset
+- `useDialog` → 新增/编辑弹窗状态
+- `BaseSearch` → 搜索区域
+- `BaseDialog` → 弹窗
+- `BaseForm` → 表单（嵌套在 BaseDialog 内）
+
+### 标准页面结构
+
+```
+页面
+├── BaseSearch（搜索区）
+├── 操作栏（新增、批量删除）
+├── el-table（v-loading, row-key, @selection-change）
+│   ├── el-table-column type="selection"
+│   ├── 业务字段列
+│   └── 操作列（编辑 / 删除）
+├── el-pagination（total, page-sizes）
+└── BaseDialog
+    └── XxxForm（ref="formRef"）
+```
+
+### 删除规范
+
+```ts
+async function handleDelete(row: XxxRecord) {
+  await ElMessageBox.confirm(`确认删除「${row.name}」？`, '提示', { type: 'warning' })
+  await deleteXxx(row.id)
+  ElMessage.success('删除成功')
+  fetchList()
+}
+```
+
+### 性能要求
+
+- tableData 用 shallowRef 或 ref（避免深层响应）
+- 避免在 template 中写复杂计算（用 computed）
+- 操作列按钮用 link 类型，节省空间
+- 分页变化调用 handlePageChange / handleSizeChange，禁止手动 watch pagination

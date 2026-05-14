@@ -1,10 +1,72 @@
 ---
-description: 抽屉：宽度、路由内嵌、移动端手势
+description: 抽屉：BaseDrawer 组件 + useDialog hook 使用规范
 alwaysApply: false
 ---
 
-## Drawer
+## Drawer 规范
 
-- 宽度与断点适配；内容区独立滚动，不与页面双滚动条冲突。
-- 与路由或 URL 状态联动时，后退行为符合预期。
-- 长表单在抽屉内需保存/离开提示（与项目约定一致）。
+### 必须使用
+
+- 组件：`src/ai-kit/components/BaseDrawer.vue`
+- Hook：`src/ai-kit/hooks/useDialog.ts`（复用同一 hook）
+
+### 禁止
+
+- 禁止裸用 `el-drawer`
+- 内容区禁止产生双滚动条（BaseDrawer 内置独立滚动）
+- 禁止在 Drawer 内部直接调用接口
+
+### 标准用法
+
+```vue
+<script setup lang="ts">
+import BaseDrawer from '@/ai-kit/components/BaseDrawer.vue'
+import BaseForm from '@/ai-kit/forms/BaseForm.vue'
+import { useDialog } from '@/ai-kit/hooks/useDialog'
+import { ref } from 'vue'
+
+const drawer = useDialog<{ id?: number }>()
+const formRef = ref()
+
+// 长表单离开拦截
+async function beforeClose() {
+  // return confirm('内容未保存，确认离开？')
+  return true
+}
+
+async function handleConfirm() {
+  const ok = await formRef.value?.validate()
+  if (!ok) return
+  drawer.loading.value = true
+  try {
+    // await saveApi(...)
+    drawer.confirm()
+    fetchList()
+  } finally {
+    drawer.loading.value = false
+  }
+}
+</script>
+
+<template>
+  <BaseDrawer
+    v-model:visible="drawer.visible.value"
+    title="编辑详情"
+    :loading="drawer.loading.value"
+    :before-close="beforeClose"
+    @confirm="handleConfirm"
+    @cancel="drawer.close"
+  >
+    <BaseForm ref="formRef" :model="form" :rules="rules">
+      <!-- 表单字段 -->
+    </BaseForm>
+  </BaseDrawer>
+</template>
+```
+
+### 要求
+
+- 宽度默认 480px，移动端自动 100%（BaseDrawer 内置）
+- 内容区独立滚动，不与页面产生双滚动条
+- 长表单配置 beforeClose 属性实现离开拦截
+- destroy-on-close 关闭后销毁表单状态

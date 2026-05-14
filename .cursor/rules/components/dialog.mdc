@@ -1,10 +1,69 @@
 ---
-description: 弹窗：打开关闭、焦点陷阱、嵌套与 z-index
+description: 弹窗：BaseDialog 组件 + useDialog hook 使用规范
 alwaysApply: false
 ---
 
-## Dialog
+## Dialog 规范
 
-- 打开时焦点移入对话框，关闭后焦点回到触发元素。
-- 支持 ESC 关闭与遮罩策略（点击遮罩是否关闭）与产品一致。
-- 避免多层弹窗 z-index 与滚动穿透；销毁时移除监听与定时器。
+### 必须使用
+
+- 组件：`src/ai-kit/components/BaseDialog.vue`
+- Hook：`src/ai-kit/hooks/useDialog.ts`
+
+### 禁止
+
+- 禁止裸用 `el-dialog`
+- 禁止父子双控 visible（useDialog 单一来源）
+- 禁止在 Dialog 内部直接调用接口
+
+### 标准用法
+
+```vue
+<script setup lang="ts">
+import BaseDialog from '@/ai-kit/components/BaseDialog.vue'
+import BaseForm from '@/ai-kit/forms/BaseForm.vue'
+import { useDialog } from '@/ai-kit/hooks/useDialog'
+import { ref } from 'vue'
+
+const dialog = useDialog<{ id?: number; name: string }>()
+const formRef = ref()
+const form = ref({ name: '' })
+
+async function handleConfirm() {
+  const ok = await formRef.value?.validate()
+  if (!ok) return
+  dialog.loading.value = true
+  try {
+    // await saveApi(form.value)
+    dialog.confirm()
+    fetchList()
+  } finally {
+    dialog.loading.value = false
+  }
+}
+</script>
+
+<template>
+  <BaseDialog
+    v-model:visible="dialog.visible.value"
+    :title="dialog.payload.value?.id ? '编辑' : '新增'"
+    :loading="dialog.loading.value"
+    @confirm="handleConfirm"
+    @cancel="dialog.close"
+  >
+    <BaseForm ref="formRef" :model="form" :rules="rules">
+      <el-form-item label="名称" prop="name">
+        <el-input v-model="form.name" />
+      </el-form-item>
+    </BaseForm>
+  </BaseDialog>
+</template>
+```
+
+### 要求
+
+- visible 由 useDialog 管理，禁止父子双控
+- 关闭自动销毁（BaseDialog 内置 destroy-on-close）
+- 确认按钮显示 loading
+- ESC / 关闭图标触发 dialog.close()
+- 表单校验在 confirm 回调中、接口调用前执行

@@ -1,17 +1,40 @@
 ---
-description: useRequest：缓存、轮询、依赖与取消
+description: useRequest：异步请求封装 hook，统一 loading/error/data 状态
 alwaysApply: false
 ---
 
-生成请求 hooks 时：
+## useRequest
 
-要求：
-- loading
-- error
-- retry
-- cancel
-- 防重复请求
-- TS 类型完整
+位置：`src/ai-kit/hooks/useRequest.ts`
 
-优先使用：
-- request 封装
+### API
+
+```ts
+const { data, loading, error, run, refresh } = useRequest(apiFn, {
+  immediate: true,      // 立即执行
+  initialData: [],      // 初始值
+  onSuccess: (data) => {},
+  onError: (err) => {},
+})
+```
+
+### 用法
+
+```ts
+// 立即执行
+const { data, loading } = useRequest(getUserList, { immediate: true })
+
+// 手动触发（带参数）
+const { data, loading, run } = useRequest(getUserById)
+run(userId)
+
+// 刷新（重用上次参数）
+refresh()
+```
+
+### 规则
+
+- 禁止在页面级重复封装 loading / error / data
+- 所有接口调用优先 useRequest，复杂场景（分页）用 useTable
+- immediate: true 时无需在 onMounted 手动调用
+- 接口函数放 services/，不在 hook 内写业务逻辑

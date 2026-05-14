@@ -1,10 +1,61 @@
 ---
-description: useTable：分页、排序、筛选与请求封装
+description: useTable：表格分页、loading、selection 状态管理 hook
 alwaysApply: false
 ---
 
 ## useTable
 
-- 分页参数命名与后端统一；页码变化时取消过时请求。
-- 排序与筛选变更重置页码；loading 与 error 状态暴露完整。
-- 刷新、重置、静默轮询等 API 语义单一不重叠。
+位置：`src/ai-kit/hooks/useTable.ts`
+
+### API
+
+```ts
+const {
+  tableData, loading, pagination, selection,
+  fetchList, handleSearch, handleReset,
+  handlePageChange, handleSizeChange, handleSelectionChange
+} = useTable<T>((params) => getList(params))
+```
+
+### 标准用法
+
+```vue
+<script setup lang="ts">
+import { useTable } from '@/ai-kit/hooks/useTable'
+import { useSearch } from '@/ai-kit/hooks/useSearch'
+import { getUserList } from '@/services/user'
+import { onMounted } from 'vue'
+
+interface UserRecord { id: number; name: string; status: number }
+
+const { tableData, loading, pagination, fetchList, handleSearch, handleReset } =
+  useTable<UserRecord>((p) => getUserList(p))
+
+const { params, search, reset } = useSearch(
+  { name: '', status: '' as string },
+  (p) => handleSearch(p as Record<string, unknown>)
+)
+
+onMounted(() => fetchList())
+</script>
+
+<template>
+  <el-table v-loading="loading" :data="tableData">
+    <!-- columns -->
+  </el-table>
+  <el-pagination
+    v-model:current-page="pagination.page"
+    v-model:page-size="pagination.pageSize"
+    :total="pagination.total"
+    @current-change="handlePageChange"
+    @size-change="handleSizeChange"
+  />
+</template>
+```
+
+### 规则
+
+- 禁止在页面内裸声明 tableData / loading / pagination
+- 搜索时调用 handleSearch（内部重置 page=1）
+- 重置时调用 handleReset
+- 接口返回格式必须为 `{ list: T[], total: number }`

@@ -1,17 +1,73 @@
 ---
-description: 树：展开默认、搜索定位与图标语义
+description: 树：BaseTree 组件 + useTree hook 使用规范
 alwaysApply: false
 ---
 
-生成 Tree 组件时：
+## Tree 规范
 
-要求：
-- 支持搜索
-- checkbox
-- 展开收起
-- lazy load
-- hooks 化
-- 类型完整
+### 必须使用
 
-优先复用：
-- BaseTree
+- 组件：`src/ai-kit/tree/BaseTree.vue`
+- Hook：`src/ai-kit/hooks/useTree.ts`
+
+### 禁止
+
+- 禁止裸用 `el-tree`
+- 禁止在页面内裸声明 treeData / loading / filterText
+
+### 标准用法
+
+```vue
+<script setup lang="ts">
+import BaseTree from '@/ai-kit/tree/BaseTree.vue'
+import { useTree } from '@/ai-kit/hooks/useTree'
+import { getDeptTree } from '@/services/dept'
+import { onMounted } from 'vue'
+
+interface DeptNode { id: number; label: string; children?: DeptNode[] }
+
+const { treeData, loading, filterText, checkedKeys, fetchTree } = useTree<DeptNode>(getDeptTree)
+
+function onNodeClick(node: DeptNode) {
+  // 点击节点触发右侧列表联动
+}
+
+onMounted(() => fetchTree())
+</script>
+
+<template>
+  <div class="dept-tree">
+    <!-- 搜索框驱动过滤 -->
+    <el-input v-model="filterText" placeholder="搜索部门" clearable prefix-icon="Search" />
+
+    <BaseTree
+      :data="treeData"
+      :loading="loading"
+      :filter-text="filterText"
+      :show-checkbox="true"
+      v-model:checked-keys="checkedKeys"
+      node-key="id"
+      label="label"
+      @node-click="onNodeClick"
+    />
+  </div>
+</template>
+```
+
+### Lazy Load 用法
+
+```vue
+<BaseTree
+  :data="[]"
+  :lazy="true"
+  :load="loadNode"
+  node-key="id"
+/>
+```
+
+### 要求
+
+- 数据通过 useTree 管理，组件只做展示
+- 搜索框在组件外部，filterText 传入触发过滤
+- checkbox 勾选结果通过 v-model:checked-keys 双向绑定
+- loading 状态必须展示（骨架或遮罩）

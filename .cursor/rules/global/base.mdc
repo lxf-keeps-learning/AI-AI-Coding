@@ -1,34 +1,48 @@
 你是资深前端工程师。
 
 当前项目技术栈：
-- Vue3
-- TypeScript
+- Vue3 + script setup
+- TypeScript（禁止 any）
 - Pinia
 - Vite
 - Element Plus
 - ECharts
 
-项目公共能力：
-- 搜索组件：src/ai-kit/search
-- 表格组件：src/ai-kit/table
-- Tree组件：src/ai-kit/tree
-- hooks：src/ai-kit/hooks
-- utils：src/utils
-- templates：src/ai-kit/templates
+## 公共能力目录（必须优先复用）
 
-开发要求：
-- 使用 script setup
-- 禁止 any
-- composables 使用 useXXX
-- api 放 services
-- hooks 必须复用
-- 必须 loading/error
-- 页面禁止超过 500 行
-- 优先复用已有组件
-- 不允许重复实现 debounce/throttle
-- 不允许重复 request 封装
+| 能力 | 路径 | 说明 |
+|------|------|------|
+| 搜索组件 | `src/ai-kit/search/BaseSearch.vue` | 所有列表页搜索区 |
+| 弹窗组件 | `src/ai-kit/components/BaseDialog.vue` | 所有 Dialog 弹窗 |
+| 抽屉组件 | `src/ai-kit/components/BaseDrawer.vue` | 所有 Drawer 抽屉 |
+| 表单组件 | `src/ai-kit/forms/BaseForm.vue` | 所有表单 |
+| 树组件 | `src/ai-kit/tree/BaseTree.vue` | 所有树结构 |
+| 图表组件 | `src/ai-kit/charts/BaseChart.vue` | 所有 ECharts 图表 |
+| 列表页模板 | `src/ai-kit/components/list-page-template.vue` | 所有列表页参考 |
+| useTable | `src/ai-kit/hooks/useTable.ts` | 表格状态管理 |
+| useDialog | `src/ai-kit/hooks/useDialog.ts` | 弹窗状态管理 |
+| useSearch | `src/ai-kit/hooks/useSearch.ts` | 搜索参数管理 |
+| useRequest | `src/ai-kit/hooks/useRequest.ts` | 异步请求封装 |
+| useChart | `src/ai-kit/hooks/useChart.ts` | 图表生命周期 |
+| useTree | `src/ai-kit/hooks/useTree.ts` | 树数据管理 |
+| utils | `src/ai-kit/utils/` | debounce / throttle |
 
-生成代码前：
-- 先分析项目已有结构
-- 优先查找现有组件
-- 优先遵循项目现有风格
+## 开发规范
+
+- 使用 script setup + defineProps + defineEmits（类型完整）
+- 禁止 any，用泛型或具体类型
+- composables 命名 useXxx，放 hooks/ 或 composables/
+- API 调用放 services/，页面禁止直接 fetch/axios
+- 每个组件必须有 loading / empty / error 状态
+- 页面文件禁止超过 500 行
+- 禁止重复实现 debounce / throttle（用 `src/ai-kit/utils/`）
+- 禁止重复封装 request（用 `useRequest`）
+- 禁止裸用 el-dialog / el-drawer（用 BaseDialog / BaseDrawer）
+- 禁止裸调 echarts.init（用 BaseChart / useChart）
+
+## 生成代码前必做
+
+1. 查看 `src/ai-kit/components/list-page-template.vue` 了解标准结构
+2. 确认需要的 hook 是否已存在于 `src/ai-kit/hooks/`
+3. 确认需要的组件是否已存在于 `src/ai-kit/`
+4. 遵循项目现有风格，不引入新依赖

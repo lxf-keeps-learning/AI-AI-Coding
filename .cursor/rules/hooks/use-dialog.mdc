@@ -1,10 +1,47 @@
 ---
-description: useDialog：可见性、payload 与 Promise 化关闭
+description: useDialog：弹窗/抽屉状态管理 hook 使用规范
 alwaysApply: false
 ---
 
 ## useDialog
 
-- open/close 与 visible 状态单一来源；避免父子双控。
-- 传递 record 或 id 时类型明确；关闭时清理表单与定时器。
-- 若支持 await 确认结果，reject/resolve 边界文档化。
+位置：`src/ai-kit/hooks/useDialog.ts`
+
+### API
+
+```ts
+const { visible, payload, loading, open, close, confirm } = useDialog<T>()
+
+// 打开弹窗，携带 record，返回 Promise<boolean>
+await dialog.open(row)
+
+// 确认（决议 true，清理状态）
+dialog.confirm()
+
+// 取消 / 关闭（决议 false，清理状态）
+dialog.close()
+```
+
+### 用法
+
+```ts
+// 新增/编辑复用同一弹窗
+const dialog = useDialog<UserRecord>()
+
+function handleAdd() { dialog.open(null) }
+function handleEdit(row: UserRecord) { dialog.open(row) }
+
+// 通过 payload.value 区分新增/编辑
+// dialog.payload.value?.id ? '编辑' : '新增'
+
+// Promise 化：等待用户操作结果
+const ok = await dialog.open(row)
+if (ok) fetchList()
+```
+
+### 规则
+
+- visible / payload 单一来源，禁止父子双控
+- 关闭时自动清理 payload 和 loading
+- loading 在接口调用期间手动设为 true，finally 中设为 false
+- 泛型 T 明确指定业务类型，禁止 any
