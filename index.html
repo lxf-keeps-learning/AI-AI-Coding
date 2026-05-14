@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="本地提示词工程工作台：模板、变量替换、历史记录" />
+    <title>Prompt Lab · 提示词工作台</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="header__brand">
+          <span class="header__logo" aria-hidden="true">&gt;_</span>
+          <h1 class="header__title">Prompt Lab</h1>
+          <span class="header__tag">提示词工作台</span>
+        </div>
+        <div class="header__actions">
+          <button type="button" class="btn btn--ghost" id="btn-format" title="整理空白与换行">格式化</button>
+          <button type="button" class="btn btn--ghost" id="btn-clear" title="清空编辑器">清空</button>
+          <button type="button" class="btn btn--primary" id="btn-copy" title="复制到剪贴板">复制</button>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="panel panel--editor" aria-label="提示词编辑区">
+          <div class="panel__head">
+            <label for="prompt-editor" class="panel__label">编辑区</label>
+            <span class="panel__hint" id="char-count">0 字符</span>
+          </div>
+          <textarea
+            id="prompt-editor"
+            class="editor"
+            spellcheck="false"
+            placeholder="在此编写或粘贴提示词…&#10;&#10;使用 {{变量名}} 占位，右侧可一键替换。&#10;下方模板可一键插入常用结构。"
+            rows="18"
+          ></textarea>
+        </section>
+
+        <aside class="sidebar">
+          <section class="panel" aria-label="变量替换">
+            <div class="panel__head">
+              <h2 class="panel__label">变量 {{}}</h2>
+              <button type="button" class="btn btn--sm btn--ghost" id="btn-scan-vars">扫描</button>
+            </div>
+            <p class="panel__desc">扫描后填写值，点击「全部替换」写入编辑区。</p>
+            <div id="var-list" class="var-list"></div>
+            <div class="var-actions">
+              <button type="button" class="btn btn--accent btn--block" id="btn-apply-vars" disabled>
+                全部替换
+              </button>
+            </div>
+          </section>
+
+          <section class="panel" aria-label="内置模板">
+            <div class="panel__head">
+              <h2 class="panel__label">模板库</h2>
+            </div>
+            <p class="panel__desc">点击插入到光标处；无光标则追加到末尾。</p>
+            <div id="template-list" class="template-list"></div>
+          </section>
+
+          <section class="panel panel--history" aria-label="历史记录">
+            <div class="panel__head">
+              <h2 class="panel__label">历史</h2>
+              <button type="button" class="btn btn--sm btn--ghost" id="btn-save-history" title="将当前内容存入本地">
+                保存快照
+              </button>
+            </div>
+            <ul id="history-list" class="history-list"></ul>
+            <button type="button" class="btn btn--danger-ghost btn--block btn--sm" id="btn-clear-history">
+              清空全部历史
+            </button>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="footer">
+        <span>数据仅存于本机 localStorage</span>
+        <span class="footer__sep">·</span>
+        <span id="toast" class="toast" role="status" aria-live="polite"></span>
+      </footer>
+    </div>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>
