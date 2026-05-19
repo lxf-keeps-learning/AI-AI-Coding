@@ -1,0 +1,26 @@
+{
+  "skill_name": "performance",
+  "evals": [
+    {
+      "id": 1,
+      "name": "diagnose-symptom-first-not-jump-to-solution",
+      "prompt": "我们的设备监控大屏挺卡的,你帮我看看怎么优化吧。",
+      "expected_output": "应该明确拒绝在没有症状采集的情况下直接推方案。先反问关键问题(哪个页面/交互、首次还是用一段时间、数据量级、是否有 Performance/Memory 数据、是否生产环境等);如果用户坚持现在就出报告,要在报告第 1 节标注'症状未采集,以下结论为假设性',并把采集 baseline 作为 P0 改造项。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "classify-and-route-large-data-and-chart-bottlenecks",
+      "prompt": "页面 src/views/sales/trend.vue 进入后等 3 秒才出图表。是一条折线图,后端一次返回 8000 个数据点。Performance 录制显示初始化 setOption 耗时 1.8 秒,渲染 commit 也很长。这页面只在工作日运营查看。代码里业务自己 echarts.init,onMounted 拿到数据后一次性 setOption,没有 sampling。",
+      "expected_output": "应该同时命中'大数据'和'图表'两类瓶颈,优先级里写两条 P0:(1) 改回 BaseChart / useChart——违反项目硬性规定;(2) 启用 ECharts sampling: 'lttb' + 设置 progressive。报告要给出度量目标(初始化 1.8s → < 800ms),引用 chart.md 和 large-data.md 中的反模式,并给出回滚预案。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "detect-memory-leak-from-long-running-symptom",
+      "prompt": "我们运维大屏在浏览器一直开着,刚打开还流畅,跑 1-2 小时后越来越卡,刷新页面又恢复。我看 Memory 面板堆内存一直涨。这个页面里有 6 个 ECharts 图表(其中 2 个走了 BaseChart,4 个是历史代码业务直接 echarts.init),还有一个每 5 秒轮询的 setInterval 拉新数据。",
+      "expected_output": "应该判定为内存泄漏(长时间运行越来越慢、堆持续增长是典型特征)。报告里指出两个具体泄漏源:(1) 4 个未走 BaseChart 的图表,echarts 实例可能没 dispose——P0 改回 BaseChart 直接根治;(2) setInterval 是否在 onUnmounted 清理需要核查。要求采集堆快照对比、Detached DOM 数量;并给出'切走再切回堆增长应稳定 ±10%'之类的可验证目标。",
+      "files": []
+    }
+  ]
+}

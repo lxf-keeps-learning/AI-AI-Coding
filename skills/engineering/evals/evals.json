@@ -1,0 +1,26 @@
+{
+  "skill_name": "engineering",
+  "evals": [
+    {
+      "id": 1,
+      "name": "detect-bare-el-dialog-and-recommend-reuse",
+      "prompt": "我刚写完一个设备管理页面,在 src/views/device/list.vue 里直接用了 el-dialog,在 src/views/device/edit.vue 也用了一个 el-dialog,visible 都是本地 ref,新增/编辑按钮分别置 true。每个弹窗里都自己写了 el-form 和校验。帮我看一下这种写法有没有问题,要不要抽公共的?",
+      "expected_output": "应该指出违反了项目硬性规定(必须用 BaseDialog + useDialog + BaseForm),输出报告时把这一条放进'违反复用规范'清单(P0),并明确说明不需要新抽组件,直接复用现有 ai-kit。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "find-extraction-candidate-from-three-similar-files",
+      "prompt": "review 一下下面三个文件的相似之处,看看哪些值得抽到 ai-kit,哪些应该保持现状。我感觉它们有重复:\n- src/views/device/edit-drawer.vue —— 设备编辑抽屉,有'未保存离开提示',草稿存 localStorage,key 是 device-form-draft\n- src/views/user/edit-drawer.vue —— 用户编辑抽屉,同样有未保存离开提示,草稿存 localStorage,key 是 user-form-draft\n- src/views/order/edit-dialog.vue —— 订单编辑弹窗,也做了离开提示,但没存草稿\n三个文件的'判断脏数据 + 离开拦截 + 草稿存储'逻辑结构基本一样,各自 30~50 行。",
+      "expected_output": "应该判定为可抽取候选(重复 >= 2 + 形态稳定),给出 useFormDraft 的契约草稿(非 any 的 TS interface),AI 注释草稿,放置路径 src/ai-kit/hooks/,以及配套要新增的 .cursor/rules/hooks/use-form-draft.mdc。同时要提醒第三个文件没存草稿的差异处理。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "resist-premature-abstraction-from-single-occurrence",
+      "prompt": "我在 src/views/monitor/big-screen.vue 里写了一个 useColumnConfig 的逻辑,大概 60 行,做表头动态配置 + 本地存储记忆。我觉得这玩意儿挺通用的,以后所有列表页都可能用到,要不要现在就抽到 src/ai-kit/hooks/useColumnConfig.ts 里?",
+      "expected_output": "应该明确拒绝过早抽象——只有 1 处真实用例,放进'观察项'而不是'建议抽取'。可以解释判定标准(>= 2 处真实业务、稳定形态),并建议先在这一处稳定 1-2 个版本,等再有第二个真实业务场景再评估。",
+      "files": []
+    }
+  ]
+}
