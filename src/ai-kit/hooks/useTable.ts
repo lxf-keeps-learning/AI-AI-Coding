@@ -38,16 +38,19 @@ export function useTable<T = unknown, P extends Record<string, unknown> = Record
   })
 
   let currentParams = {} as P
+  let requestId = 0
 
   async function fetchList(params?: P) {
+    const currentRequestId = ++requestId
     if (params) currentParams = params
     loading.value = true
     try {
       const res = await apiFn({ ...currentParams, page: pagination.page, pageSize: pagination.pageSize })
+      if (currentRequestId !== requestId) return
       tableData.value = res.list
       pagination.total = res.total
     } finally {
-      loading.value = false
+      if (currentRequestId === requestId) loading.value = false
     }
   }
 
@@ -58,6 +61,7 @@ export function useTable<T = unknown, P extends Record<string, unknown> = Record
 
   function handleReset() {
     pagination.page = 1
+    currentParams = {} as P
     fetchList()
   }
 

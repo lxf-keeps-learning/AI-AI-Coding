@@ -6,12 +6,6 @@
     <meta name="description" content="本地提示词工程工作台：模板、变量替换、历史记录" />
     <title>Prompt Lab · 提示词工作台</title>
     <link rel="stylesheet" href="css/style.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <div class="app">
@@ -24,7 +18,7 @@
         <div class="header__actions">
           <button type="button" class="btn btn--ghost" id="btn-format" title="整理空白与换行">格式化</button>
           <button type="button" class="btn btn--ghost" id="btn-clear" title="清空编辑器">清空</button>
-          <button type="button" class="btn btn--primary" id="btn-copy" title="复制到剪贴板">复制</button>
+          <button type="button" class="btn btn--primary" id="btn-copy" title="复制到剪贴板（Ctrl/Cmd + Enter）">复制</button>
         </div>
       </header>
 
@@ -82,12 +76,15 @@
       </main>
 
       <footer class="footer">
-        <span>数据仅存于本机 localStorage</span>
+        <span>数据仅存于本机 · 草稿自动保存</span>
+        <span class="footer__sep">·</span>
+        <span>Ctrl/Cmd + S 保存快照 · Ctrl/Cmd + Enter 复制</span>
         <span class="footer__sep">·</span>
         <span id="toast" class="toast" role="status" aria-live="polite"></span>
       </footer>
     </div>
 
+    <script src="js/prompt-utils.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

@@ -7,7 +7,12 @@
   "use strict";
 
   var STORAGE_KEY = "prompt-lab-history-v1";
+  var DRAFT_KEY = "prompt-lab-draft-v1";
   var MAX_HISTORY = 50;
+  var DRAFT_SAVE_DELAY = 400;
+  var utils = window.PromptUtils;
+
+  if (!utils) throw new Error("PromptUtils 未加载");
 
   var editor = document.getElementById("prompt-editor");
   var charCount = document.getElementById("char-count");
@@ -19,6 +24,7 @@
 
   var varPlaceholders = {}; // name -> last input value
   var toastTimer = null;
+  var draftTimer = null;
 
   var TEMPLATES = [
     {
@@ -30,10 +36,10 @@
     },
     {
       id: "cot",
-      title: "分步推理（CoT）",
-      desc: "请逐步思考再给出结论",
+      title: "结构化分析",
+      desc: "明确约束、依据和结论",
       body:
-        "在回答前，请按以下步骤思考（思考过程请用简洁条目列出）：\n1. 理解问题与约束\n2. 列出已知信息与假设\n3. 推导或比较方案\n4. 给出最终结论与依据\n\n问题：\n{{问题}}\n",
+        "请分析以下问题，并只输出：\n1. 问题与关键约束\n2. 已知信息与必要假设\n3. 可选方案及取舍\n4. 最终结论与依据\n\n问题：\n{{问题}}\n",
     },
     {
       id: "json",
@@ -94,6 +100,38 @@
     charCount.textContent = n + " 字符";
   }
 
+  function saveDraft() {
+    try {
+      if (editor.value) {
+        localStorage.setItem(DRAFT_KEY, editor.value);
+      } else {
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    } catch (e) {
+      showToast("草稿自动保存失败（可能超出配额）");
+    }
+  }
+
+  function scheduleDraftSave() {
+    if (draftTimer) clearTimeout(draftTimer);
+    draftTimer = setTimeout(function () {
+      saveDraft();
+      draftTimer = null;
+    }, DRAFT_SAVE_DELAY);
+  }
+
+  function restoreDraft() {
+    try {
+      var draft = localStorage.getItem(DRAFT_KEY);
+      if (!draft) return;
+      editor.value = draft;
+      updateCharCount();
+      showToast("已恢复上次草稿");
+    } catch (e) {
+      showToast("草稿读取失败");
+    }
+  }
+
   function insertAtCursor(text) {
     var v = editor.value;
     var start = editor.selectionStart;
@@ -111,23 +149,7 @@
     }
     editor.focus();
     updateCharCount();
-  }
-
-  /** 匹配 {{name}}，name 不含 } */
-  var VAR_REGEX = /\{\{([^}]+)\}\}/g;
-
-  function extractUniqueVarNames(text) {
-    var seen = {};
-    var names = [];
-    var m;
-    VAR_REGEX.lastIndex = 0;
-    while ((m = VAR_REGEX.exec(text)) !== null) {
-      var raw = m[1].trim();
-      if (!raw || seen[raw]) continue;
-      seen[raw] = true;
-      names.push(raw);
-    }
-    return names;
+    saveDraft();
   }
 
   function renderVarInputs(names) {
@@ -136,10 +158,10 @@
       btnApplyVars.disabled = true;
       return;
     }
-    names.forEach(function (name) {
+    names.forEach(function (name, index) {
       var row = document.createElement("div");
       row.className = "var-row";
-      var inputId = "var-input-" + name.replace(/\W/g, "_");
+      var inputId = "var-input-" + index;
       var label = document.createElement("label");
       label.setAttribute("for", inputId);
       label.textContent = "{{" + name + "}}";
@@ -157,7 +179,7 @@
   }
 
   function scanVariables() {
-    var names = extractUniqueVarNames(editor.value);
+    var names = utils.extractUniqueVarNames(editor.value);
     renderVarInputs(names);
     if (!names.length) {
       showToast("未检测到 {{变量}}");
@@ -179,21 +201,16 @@
   function applyVariableReplacement() {
     var text = editor.value;
     var map = collectVarValues();
-    var names = extractUniqueVarNames(text);
+    var names = utils.extractUniqueVarNames(text);
     if (!names.length) {
       showToast("请先扫描或输入含 {{}} 的内容");
       return;
     }
-    var replaced = text.replace(/\{\{([^}]+)\}\}/g, function (_, inner) {
-      var key = inner.trim();
-      if (Object.prototype.hasOwnProperty.call(map, key)) {
-        return map[key];
-      }
-      return "{{" + key + "}}";
-    });
+    var replaced = utils.replaceVariables(text, map);
     editor.value = replaced;
+    saveDraft();
     updateCharCount();
-    renderVarInputs(extractUniqueVarNames(replaced));
+    renderVarInputs(utils.extractUniqueVarNames(replaced));
     showToast("已替换到编辑区");
   }
 
@@ -203,16 +220,9 @@
       showToast("内容为空");
       return;
     }
-    s = s.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    s = s
-      .split("\n")
-      .map(function (line) {
-        return line.replace(/[ \t]+$/g, "");
-      })
-      .join("\n");
-    s = s.replace(/\n{4,}/g, "\n\n\n");
-    s = s.trim() + "\n";
+    s = utils.formatPrompt(s);
     editor.value = s;
+    saveDraft();
     updateCharCount();
     showToast("已格式化");
   }
@@ -224,6 +234,7 @@
     }
     if (window.confirm("确定清空编辑区？")) {
       editor.value = "";
+      saveDraft();
       varListEl.innerHTML = "";
       btnApplyVars.disabled = true;
       updateCharCount();
@@ -261,7 +272,7 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
       var arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
+      return utils.sanitizeHistory(arr);
     } catch (e) {
       return [];
     }
@@ -270,8 +281,10 @@
   function saveHistory(items) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      return true;
     } catch (e) {
       showToast("存储失败（可能超出配额）");
+      return false;
     }
   }
 
@@ -324,6 +337,7 @@
       btnLoad.textContent = "恢复";
       btnLoad.addEventListener("click", function () {
         editor.value = item.content;
+        saveDraft();
         updateCharCount();
         scanVariables();
         showToast("已从历史恢复");
@@ -336,9 +350,10 @@
         var next = loadHistory().filter(function (x) {
           return x.id !== item.id;
         });
-        saveHistory(next);
-        renderHistory();
-        showToast("已删除该条");
+        if (saveHistory(next)) {
+          renderHistory();
+          showToast("已删除该条");
+        }
       });
       actions.appendChild(btnLoad);
       actions.appendChild(btnDel);
@@ -363,9 +378,10 @@
     if (items.length > MAX_HISTORY) {
       items = items.slice(0, MAX_HISTORY);
     }
-    saveHistory(items);
-    renderHistory();
-    showToast("快照已保存");
+    if (saveHistory(items)) {
+      renderHistory();
+      showToast("快照已保存");
+    }
   }
 
   function clearAllHistory() {
@@ -400,8 +416,23 @@
     });
   }
 
+  function handleKeyboardShortcuts(event) {
+    if (!(event.ctrlKey || event.metaKey)) return;
+    if (event.key.toLowerCase() === "s") {
+      event.preventDefault();
+      saveSnapshot();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      copyToClipboard();
+    }
+  }
+
   /* Events */
-  editor.addEventListener("input", updateCharCount);
+  editor.addEventListener("input", function () {
+    updateCharCount();
+    scheduleDraftSave();
+  });
+  document.addEventListener("keydown", handleKeyboardShortcuts);
   document.getElementById("btn-scan-vars").addEventListener("click", scanVariables);
   btnApplyVars.addEventListener("click", applyVariableReplacement);
   document.getElementById("btn-format").addEventListener("click", formatPrompt);
@@ -414,4 +445,5 @@
   updateCharCount();
   renderTemplates();
   renderHistory();
+  restoreDraft();
 })();

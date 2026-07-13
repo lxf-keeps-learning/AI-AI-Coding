@@ -7,8 +7,16 @@
 ## 团队使用
 
 1. `git clone https://github.com/xs-lxf/AI-AI-Coding.git`
-2. Cursor 打开项目
-3. 直接在 Chat 会话框输入提示词，参考下方示例
+2. Cursor 打开项目，按需使用 `.cursor/rules/`、`prompts/` 与 `src/ai-kit/`
+3. 浏览器直接打开 `index.html`，可使用本地 Prompt Lab 编写和管理提示词
+
+Prompt Lab 无需安装依赖或启动服务，支持模板插入、变量替换、格式化、复制、草稿自动恢复和最多 50 条本地历史快照。所有内容只保存在浏览器 `localStorage`。
+
+本地校验（需要 Node.js 18+）：
+
+```bash
+npm run check
+```
 
 ---
 
@@ -44,6 +52,12 @@ project/
 │   ├── charts/             ← 图表提示词
 │   └── review/             ← Code Review 提示词
 │
+├── skills/                 ← 工程化与性能诊断工作流
+├── docs/ai/                ← AI 协作指南与规范说明
+├── index.html              ← 本地 Prompt Lab 入口
+├── css/ + js/              ← Prompt Lab 样式与交互
+├── tests/                  ← Prompt Lab 核心逻辑测试
+├── package.json            ← 零第三方依赖的校验命令
 └── src/ai-kit/             ← 公共组件库（AI 知识库核心）
     ├── components/         ← BaseDialog、BaseDrawer、列表页模板
     ├── forms/              ← BaseForm
@@ -172,3 +186,10 @@ review 当前 diff，检查：
 - 禁止重复封装 request / debounce / throttle → 用 `useRequest` / `src/ai-kit/utils/`
 - 页面文件禁止超过 500 行
 - 禁止 TypeScript `any`
+
+---
+
+## 项目文档
+
+- [项目总结](./项目总结.md)：定位、架构、核心能力、技术亮点、局限与演进建议
+- [面试大纲](./面试大纲.md)：项目讲解结构、重点问题、参考回答与追问方向

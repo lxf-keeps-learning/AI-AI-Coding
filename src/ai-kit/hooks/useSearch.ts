@@ -1,4 +1,4 @@
-import { reactive, ref } from 'vue'
+import { onUnmounted, reactive, toRaw } from 'vue'
 
 /**
  * useSearch —— 搜索表单通用状态管理
@@ -29,14 +29,19 @@ export function useSearch<T extends Record<string, unknown>>(
   function search() {
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
-      onSearch?.(params)
+      timer = null
+      onSearch?.({ ...toRaw(params) } as T)
     }, debounceMs)
   }
 
   function reset() {
     Object.assign(params, initialParams)
-    onSearch?.(params)
+    onSearch?.({ ...toRaw(params) } as T)
   }
+
+  onUnmounted(() => {
+    if (timer) clearTimeout(timer)
+  })
 
   return { params, search, reset }
 }

@@ -32,21 +32,25 @@ export function useRequest<T, P extends unknown[] = []>(
   const loading = ref(false)
   const error = ref<unknown>(null)
   let lastArgs: P | undefined
+  let requestId = 0
 
   async function run(...args: P) {
+    const currentRequestId = ++requestId
     lastArgs = args
     loading.value = true
     error.value = null
     try {
       const res = await apiFn(...args)
+      if (currentRequestId !== requestId) return res
       data.value = res
       onSuccess?.(res)
       return res
     } catch (err) {
+      if (currentRequestId !== requestId) return undefined
       error.value = err
       onError?.(err)
     } finally {
-      loading.value = false
+      if (currentRequestId === requestId) loading.value = false
     }
   }
 
@@ -54,9 +58,14 @@ export function useRequest<T, P extends unknown[] = []>(
     if (lastArgs) return run(...lastArgs)
   }
 
+  function cancel() {
+    requestId += 1
+    loading.value = false
+  }
+
   if (immediate) {
     run(...([] as unknown as P))
   }
 
-  return { data, loading, error, run, refresh }
+  return { data, loading, error, run, refresh, cancel }
 }

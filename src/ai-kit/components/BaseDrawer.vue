@@ -48,13 +48,18 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-async function handleClose() {
+async function requestClose(done?: () => void) {
   if (props.beforeClose) {
     const allow = await props.beforeClose()
     if (!allow) return
   }
   emit('update:visible', false)
   emit('cancel')
+  done?.()
+}
+
+function handleBeforeClose(done: () => void) {
+  void requestClose(done)
 }
 
 function handleConfirm() {
@@ -68,8 +73,8 @@ function handleConfirm() {
     :title="title"
     :size="size"
     :direction="direction"
+    :before-close="handleBeforeClose"
     destroy-on-close
-    @close="handleClose"
   >
     <div v-loading="loading" class="base-drawer__body">
       <slot />
@@ -77,7 +82,7 @@ function handleConfirm() {
 
     <template v-if="!hideFooter" #footer>
       <div class="base-drawer__footer">
-        <el-button @click="handleClose">{{ cancelText }}</el-button>
+        <el-button @click="requestClose()">{{ cancelText }}</el-button>
         <el-button type="primary" :loading="loading" @click="handleConfirm">
           {{ confirmText }}
         </el-button>
