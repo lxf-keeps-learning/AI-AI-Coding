@@ -19,7 +19,7 @@ test("安装器为业务项目创建 Codex Skill、Cursor Rule 和配置", (t) =
   const config = JSON.parse(fs.readFileSync(result.config, "utf8"));
   assert.equal(config.version, 1);
   assert.equal(config.assetMode, "reference");
-  assert.ok(path.resolve(target, config.sourceRoot).endsWith("AI-AI-Coding"));
+  assert.equal(path.resolve(target, config.sourceRoot), result.sourceRoot);
 
   const cursorRule = fs.readFileSync(result.cursorRule, "utf8");
   assert.match(cursorRule, /`rules` 和 ai-kit `references`/);

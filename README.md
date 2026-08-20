@@ -1,16 +1,37 @@
-# 前端 AI 提示词工程
+# AICoding
 
-> **核心原则：不让 AI 从 0 生成，让 AI 基于规范标准生成。**
+> **开发期 AI 工程基础设施**：面向 Vue 3 + TypeScript 团队，让 Codex、Cursor 等编码助手基于团队规范、可复用资产和真实业务项目生成代码。
+>
+> 核心原则：**不让 AI 从 0 随机生成，让 AI 基于规范、Prompt、公共资产和业务事实生成。**
+
+AICoding 不是业务运行时系统，也不是成熟的 UI 组件库。它是一套开发期资产与工作流：开发者在真实业务仓库提出需求，AICoding 负责检索合适的 Prompt 和 Cursor Rules、提供 ai-kit 参考实现，AI 再结合业务仓库中的依赖、接口、类型和现有代码完成实现与验证。
 
 ---
 
-## 团队使用
+## 两条主链路
 
-1. `git clone https://github.com/xs-lxf/AI-AI-Coding.git`
-2. Cursor 打开项目，按需使用 `.cursor/rules/`、`prompts/` 与 `src/ai-kit/`
-3. 浏览器直接打开 `index.html`，可使用本地 Prompt Lab 编写和管理提示词
+```text
+① 需求链路（仓库内工作流，模板 + Skill 驱动）
+   MRD/需求 → PRD-SPEC → HLD → LLD → TASKS
 
-### 接入真实业务项目
+② 编码链路（可安装到业务项目）
+   需求 → Prompt 检索 → Cursor Rules/ai-kit → 业务项目代码生成 → 验证
+```
+
+- **需求链路**：由 `skills/prd-spec-enhancer/` 与 `design/_templates/` 驱动，产出 `design/<slug>/` 下的 PRD-SPEC / HLD / LLD / TASKS 文档链。
+- **编码链路**：由安装器、检索器与 `skills/aicoding-codegen/` 驱动，在真实业务仓库完成代码生成并运行项目已有检查。
+
+## 快速开始
+
+### 1. 作为开发期知识库使用
+
+```bash
+git clone https://github.com/xs-lxf/AI-AI-Coding.git
+```
+
+浏览器直接打开 `index.html` 可使用本地 Prompt Lab（无需安装依赖，数据存于浏览器 localStorage）。Cursor 打开项目后 `.cursor/rules/` 自动生效。
+
+### 2. 接入真实业务项目
 
 ```bash
 cd /你的/业务项目
@@ -18,79 +39,42 @@ npm install --save-dev /AICoding所在路径/AI-AI-Coding
 npx aicoding install --target .
 ```
 
-重新打开业务项目的 Codex 或 Cursor 会话后，可以直接输入“生成一个折线图”。AI 会自动检索本仓库的 Prompt 和 ai-kit，再结合业务项目生成并验证代码。完整说明见 [实际项目接入指南](./docs/实际项目接入指南.md)。
+重新打开业务项目 Codex / Cursor 会话后，直接输入“生成一个折线图”即可。完整说明见 [docs/实际项目接入指南.md](./docs/实际项目接入指南.md)。
 
-Prompt Lab 无需安装依赖或启动服务，支持首页展示 `prompts/` 中的项目 Prompt、分类筛选、全文搜索、一键插入、变量替换、格式化、复制、草稿自动恢复和最多 50 条本地历史快照。所有内容只保存在浏览器 `localStorage`。
-
-新增或修改 `prompts/**/*.md` 后，重新生成首页目录：
+## 常用命令
 
 ```bash
-npm run build:prompts
+npm run check              # 全量验证：语法、Prompt、ai-kit 契约、TypeScript、Node 测试、Vitest
+npm run build:prompts      # 新增/修改 prompts/**/*.md 后重新生成静态目录
+npx aicoding install --target .     # 把 Codegen Skill / Rule / 配置安装到业务项目
+npx aicoding search "折线图"        # 调试 Prompt 检索
 ```
-
-本地校验（需要 Node.js 18+）：
-
-```bash
-npm run check
-```
-
----
 
 ## 为什么有效
 
-- Cursor 自动加载 `.cursor/rules/` 中的规则（alwaysApply 或 @ 引用）
-- `src/ai-kit/` 组件和 Hook 的 AI 注释让 AI 精准定位已有能力
-- `prompts/` 是经过验证的提示词模板，复制即用
-
----
+- `.cursor/rules/`（50 条 `.mdc`）是生成约束，Cursor 自动加载，把规范前移到生成阶段；
+- `src/ai-kit/`（30 个 `.ts/.vue` 参考实现）让 AI 知道“具体怎么写”，并优先复用而非重复造轮子；
+- `prompts/`（22 个非索引 Prompt）是可版本化的任务模板，检索器按自然语言命中并自动关联 Rules 与 ai-kit 引用；
+- 契约与测试（`validate-ai-kit.js`、`vue-tsc`、Node 测试、Vitest）守住规则与实现的真实性，防止文档漂移。
 
 ## 项目结构
 
 ```
-project/
-├── .cursor/rules/          ← AI 规范（自动加载）
-│   ├── global/             ← 全局规范（base、架构、命名、TS、Git）
-│   ├── components/         ← BaseDialog、BaseDrawer 规范
-│   ├── forms/              ← BaseForm、搜索表单规范
-│   ├── table/              ← CRUD 列表页规范
-│   ├── tree/               ← BaseTree 规范
-│   ├── charts/             ← BaseChart 规范
-│   ├── hooks/              ← useTable、useDialog 等规范
-│   ├── review/             ← Code Review 规范
-│   └── performance/        ← 性能优化规范
-│
-├── prompts/                ← 提示词模板（复制到 Chat 使用）
-│   ├── readme.md           ← 索引（先看这里）
-│   ├── table/              ← 列表页提示词
-│   ├── components/         ← Dialog、Drawer 提示词
-│   ├── forms/              ← 表单提示词
-│   ├── tree/               ← 树组件提示词
-│   ├── charts/             ← 图表提示词
-│   └── review/             ← Code Review 提示词
-│
-├── skills/                 ← 工程化与性能诊断工作流
-├── docs/ai/                ← AI 协作指南与规范说明
-├── index.html              ← 本地 Prompt Lab 入口
-├── css/ + js/              ← Prompt Lab 样式、交互与生成后的 Prompt 目录
-├── scripts/                ← Prompt 目录生成脚本
-├── tests/                  ← Prompt Lab 核心逻辑测试
-├── package.json            ← 零第三方依赖的校验命令
-└── src/ai-kit/             ← 公共组件库（AI 知识库核心）
-    ├── components/         ← BaseDialog、BaseDrawer、列表页模板
-    ├── forms/              ← BaseForm
-    ├── search/             ← BaseSearch
-    ├── tree/               ← BaseTree
-    ├── charts/             ← BaseChart
-    └── hooks/              ← useTable、useDialog、useSearch、useRequest、useChart、useTree
+AICoding/
+├── .cursor/rules/          ← AI 生成约束（50 条 .mdc：global/components/forms/search/table/tree/charts/hooks/pages/performance/review/refactor）
+├── prompts/                ← 可版本化任务模板 + Prompt viewer（22 个非索引 Prompt）
+├── src/ai-kit/             ← Vue3 + TS 参考实现（组件/表单/搜索/树/图表/Hook/utils/级联筛选）
+├── skills/                 ← 可执行工作流（6 个 Skill，见 skills/README.md）
+├── design/                 ← 需求链路模板与真实样例（design/_templates/、design/cascade-filter/）
+├── scripts/                ← CLI、检索器、安装器、目录生成、契约检查
+├── js/ + css/ + index.html ← 本地 Prompt Lab
+├── tests/                  ← Node 测试（*.test.js）与 Vitest（tests/ai-kit/*.test.ts）
+└── docs/                   ← 接入指南、AI 交付流水线、工程报告等
 ```
-
----
 
 ## 一键生成示例
 
-### 列表页（CRUD）
-
-```
+```text
 参考：
   - src/ai-kit/components/list-page-template.vue
   - src/ai-kit/hooks/useTable.ts
@@ -103,99 +87,7 @@ project/
   搜索：name、status
 ```
 
-### 弹窗（新增/编辑）
-
-```
-参考：
-  - src/ai-kit/components/BaseDialog.vue
-  - src/ai-kit/forms/BaseForm.vue
-  - src/ai-kit/hooks/useDialog.ts
-
-生成设备新增/编辑弹窗，字段：name、sn、location、status
-```
-
-### 抽屉
-
-```
-参考：
-  - src/ai-kit/components/BaseDrawer.vue
-  - src/ai-kit/forms/BaseForm.vue
-  - src/ai-kit/hooks/useDialog.ts
-
-生成设备详情编辑抽屉，表单字段同上，支持离开拦截
-```
-
-### 树组件
-
-```
-参考：
-  - src/ai-kit/tree/BaseTree.vue
-  - src/ai-kit/hooks/useTree.ts
-
-生成「区域树」，调用 getAreaTree()，支持搜索、checkbox
-```
-
-### 图表
-
-```
-参考：
-  - src/ai-kit/charts/BaseChart.vue
-  - src/ai-kit/hooks/useRequest.ts
-
-生成「设备在线趋势」折线图，调用 getDeviceOnlineTrend()，支持时间范围切换
-```
-
-### Code Review
-
-```
-review 当前 diff，检查：
-  - 是否复用了 ai-kit 的组件和 hooks
-  - 有无重复的 loading/error/pagination 封装
-  - TS 类型是否完整（有无 any）
-  - 有无性能问题（深层 watch、频繁渲染）
-```
-
----
-
-## 增加公共组件时必须写 AI 注释
-
-新增组件/hook 时，注释模板：
-
-```ts
-/**
- * useXxx —— 一句话说明功能
- *
- * 功能：
- * - 条目1
- * - 条目2
- *
- * AI 规则：
- * 所有 xxx 场景优先使用本 hook，禁止 yyy
- *
- * 用法示例：
- * ```ts
- * const { ... } = useXxx(...)
- * ```
- */
-```
-
----
-
-## 团队接入步骤
-
-1. 将以下目录随业务代码一起提交 Git：
-   - `.cursor/`
-   - `prompts/`
-   - `src/ai-kit/`
-   - `docs/ai/`
-
-2. 团队统一使用 Cursor（推荐 Claude Sonnet）
-
-3. 打开项目后 `.cursor/rules/` 自动生效，无需额外配置
-
----
-
-## 核心规范
+## 核心规范（高优先级约束）
 
 - 禁止裸用 `el-dialog` / `el-drawer` → 用 `BaseDialog` / `BaseDrawer`
 - 禁止裸调 `echarts.init` → 用 `BaseChart` / `useChart`
@@ -204,9 +96,23 @@ review 当前 diff，检查：
 - 页面文件禁止超过 500 行
 - 禁止 TypeScript `any`
 
----
+## 验证体系
+
+```bash
+npm run check
+```
+
+当前检查输出（以命令实际结果为准）：
+- 50 条 Cursor 规则契约检查通过；
+- 30 个 ai-kit 实现文件通过严格类型检查；
+- Node 测试 10 项通过；
+- Vitest 3 个测试文件、10 项通过；
+- Prompt 静态目录与源文件一致；
+- `npm pack --dry-run` 发布预检通过（发布清单约 130 个文件，由 `package.json#files` 白名单控制）。
 
 ## 项目文档
 
-- [项目总结](./项目总结.md)：定位、架构、核心能力、技术亮点、局限与演进建议
+- [项目总结](./项目总结.md)：定位、架构、核心能力、可验证结果、边界与路线
 - [面试大纲](./面试大纲.md)：项目讲解结构、重点问题、参考回答与追问方向
+- [实际项目接入指南](./docs/实际项目接入指南.md)：业务项目接入步骤与边界
+- [AI 交付流水线工作流](./docs/ai-delivery-workflow.md)：需求→上线全链路各环节操作手册

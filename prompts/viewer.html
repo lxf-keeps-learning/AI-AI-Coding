@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompts 目录 · 可视化</title>
+    <base href="./" />
+    <link rel="stylesheet" href="viewer.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar__head">
+          <h1>Prompts 可视化</h1>
+          <p>浏览、说明与复制模板，配合 Cursor Chat 使用。</p>
+        </div>
+        <nav class="nav" id="nav" aria-label="提示词文件"></nav>
+      </aside>
+
+      <div class="main">
+        <div class="toolbar">
+          <span class="toolbar__path" id="current-path"></span>
+          <button type="button" class="btn btn--primary" id="btn-copy">复制 Markdown</button>
+        </div>
+
+        <div class="content">
+          <section class="intro" aria-label="使用说明">
+            <h2>怎么使用</h2>
+            <ol>
+              <li>在左侧选择场景对应的提示词文件。</li>
+              <li>阅读右侧渲染后的说明与模板正文。</li>
+              <li>点击「复制 Markdown」，粘贴到 <strong>Cursor Chat</strong>（或 Composer）。</li>
+              <li>将模板中的业务名、字段、接口名等占位改为你的项目实际值。</li>
+              <li>可配合仓库内 <code>src/ai-kit/</code> 组件与 <code>.cursor/rules/</code> 规范，生成更一致代码。</li>
+            </ol>
+            <p class="tip">
+              本页需通过静态服务访问才能加载 <code>.md</code> 文件。仓库根目录执行：
+              <code>npx serve .</code>
+              浏览器打开
+              <code>/prompts/viewer.html</code>
+              （端口以终端提示为准）。
+            </p>
+          </section>
+
+          <div id="error" class="error-box hidden" role="alert"></div>
+          <article id="md-body" class="md-body" aria-live="polite"></article>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="viewer.js"></script>
+  </body>
+</html>
