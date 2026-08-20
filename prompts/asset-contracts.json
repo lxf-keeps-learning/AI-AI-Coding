@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "prompts": {
+    "prompts/charts/bar-chart.md": {
+      "rules": [".cursor/rules/charts/chart.mdc", ".cursor/rules/charts/bar-chart.mdc"],
+      "references": ["src/ai-kit/charts/BaseChart.vue", "src/ai-kit/hooks/useChart.ts", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/charts/bigscreen-chart.md": {
+      "rules": [".cursor/rules/charts/chart.mdc", ".cursor/rules/charts/bigscreen-chart.mdc"],
+      "references": ["src/ai-kit/charts/BaseChart.vue", "src/ai-kit/hooks/useChart.ts", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/charts/chart.md": {
+      "rules": [".cursor/rules/charts/chart.mdc"],
+      "references": ["src/ai-kit/charts/BaseChart.vue", "src/ai-kit/hooks/useChart.ts", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/charts/gauge-chart.md": {
+      "rules": [".cursor/rules/charts/chart.mdc"],
+      "references": ["src/ai-kit/charts/BaseChart.vue", "src/ai-kit/hooks/useChart.ts", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/charts/line-chart.md": {
+      "rules": [".cursor/rules/charts/chart.mdc", ".cursor/rules/charts/line-chart.mdc"],
+      "references": ["src/ai-kit/charts/BaseChart.vue", "src/ai-kit/hooks/useChart.ts", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/charts/pie-chart.md": {
+      "rules": [".cursor/rules/charts/chart.mdc", ".cursor/rules/charts/pie-chart.mdc"],
+      "references": ["src/ai-kit/charts/BaseChart.vue", "src/ai-kit/hooks/useChart.ts", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/charts/radar-chart.md": {
+      "rules": [".cursor/rules/charts/chart.mdc"],
+      "references": ["src/ai-kit/charts/BaseChart.vue", "src/ai-kit/hooks/useChart.ts", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/charts/scatter-chart.md": {
+      "rules": [".cursor/rules/charts/chart.mdc"],
+      "references": ["src/ai-kit/charts/BaseChart.vue", "src/ai-kit/hooks/useChart.ts", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/components/dialog.md": {
+      "rules": [".cursor/rules/components/component.mdc", ".cursor/rules/components/dialog.mdc"],
+      "references": ["src/ai-kit/components/BaseDialog.vue", "src/ai-kit/forms/BaseForm.vue", "src/ai-kit/hooks/useDialog.ts"]
+    },
+    "prompts/components/drawer.md": {
+      "rules": [".cursor/rules/components/component.mdc", ".cursor/rules/components/drawer.mdc"],
+      "references": ["src/ai-kit/components/BaseDrawer.vue", "src/ai-kit/forms/BaseForm.vue", "src/ai-kit/hooks/useDialog.ts", "src/ai-kit/tree/BaseTree.vue", "src/ai-kit/hooks/useTree.ts"]
+    },
+    "prompts/forms/dynamic-form.md": {
+      "rules": [".cursor/rules/forms/form.mdc", ".cursor/rules/forms/dynamic-form.mdc"],
+      "references": ["src/ai-kit/forms/BaseForm.vue", "src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/forms/form.md": {
+      "rules": [".cursor/rules/forms/form.mdc"],
+      "references": ["src/ai-kit/forms/BaseForm.vue", "src/ai-kit/components/BaseDialog.vue", "src/ai-kit/hooks/useDialog.ts", "src/ai-kit/search/BaseSearch.vue", "src/ai-kit/hooks/useSearch.ts", "src/ai-kit/hooks/useTable.ts", "src/ai-kit/components/BaseDrawer.vue"]
+    },
+    "prompts/git/commit.md": {
+      "rules": [".cursor/rules/global/git.mdc"],
+      "references": [],
+      "noReferenceReason": "Git 提交工作流没有对应的 ai-kit 运行时资产"
+    },
+    "prompts/hooks/use-request.md": {
+      "rules": [".cursor/rules/hooks/use-request.mdc"],
+      "references": ["src/ai-kit/hooks/useRequest.ts"]
+    },
+    "prompts/pages/list-page.md": {
+      "rules": [".cursor/rules/global/architecture.mdc", ".cursor/rules/pages/list-page.mdc"],
+      "references": ["src/ai-kit/components/list-page-template.vue", "src/ai-kit/hooks/useTable.ts", "src/ai-kit/hooks/useSearch.ts", "src/ai-kit/hooks/useDialog.ts", "src/ai-kit/search/BaseSearch.vue"]
+    },
+    "prompts/performance/large-data.md": {
+      "rules": [".cursor/rules/performance/render.mdc", ".cursor/rules/performance/large-data.mdc"],
+      "references": [],
+      "noReferenceReason": "大数据性能 Prompt 是诊断指导，不绑定单一 ai-kit 实现"
+    },
+    "prompts/refactor/component.md": {
+      "rules": [".cursor/rules/refactor/component-refactor.mdc"],
+      "references": [],
+      "noReferenceReason": "组件重构 Prompt 面向业务代码，没有单一 ai-kit 依赖"
+    },
+    "prompts/review/review.md": {
+      "rules": [".cursor/rules/review/code-review.mdc"],
+      "references": [],
+      "noReferenceReason": "代码审查 Prompt 是规则工作流，没有运行时 ai-kit 依赖"
+    },
+    "prompts/search/base-search.md": {
+      "rules": [".cursor/rules/search/base-search.mdc"],
+      "references": ["src/ai-kit/search/BaseSearch.vue", "src/ai-kit/hooks/useSearch.ts"]
+    },
+    "prompts/table/crud-table.md": {
+      "rules": [".cursor/rules/hooks/use-table.mdc", ".cursor/rules/table/crud-table.mdc"],
+      "references": ["src/ai-kit/hooks/useTable.ts"]
+    },
+    "prompts/tree/lazy-tree.md": {
+      "rules": [".cursor/rules/tree/tree.mdc", ".cursor/rules/tree/lazy-tree.mdc"],
+      "references": ["src/ai-kit/tree/BaseTree.vue", "src/ai-kit/hooks/useTree.ts"]
+    },
+    "prompts/tree/tree.md": {
+      "rules": [".cursor/rules/tree/tree.mdc"],
+      "references": ["src/ai-kit/tree/BaseTree.vue", "src/ai-kit/hooks/useTree.ts", "src/ai-kit/components/list-page-template.vue", "src/ai-kit/hooks/useTable.ts"]
+    }
+  }
+}

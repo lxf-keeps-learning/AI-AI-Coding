@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { loadPromptContracts } = require("./prompt-contracts.js");
 
 const DEFAULT_ROOT = path.resolve(__dirname, "..");
 
@@ -92,7 +93,17 @@ function searchPrompts(query, options = {}) {
   const promptsRoot = path.join(root, "prompts");
   if (!fs.existsSync(promptsRoot)) throw new Error(`AICoding prompts 目录不存在：${promptsRoot}`);
 
+  let contracts;
+  let missingContractFile = false;
+  try {
+    contracts = loadPromptContracts(root);
+  } catch (cause) {
+    if (cause.code === "ENOENT") missingContractFile = true;
+    else throw cause;
+  }
+
   const terms = queryTerms(query);
+  const warnings = [];
   const ranked = walk(promptsRoot)
     .filter((file) => file.endsWith(".md") && path.basename(file).toLowerCase() !== "readme.md")
     .map((file) => {
@@ -110,14 +121,24 @@ function searchPrompts(query, options = {}) {
         score += Math.min(countIncludes(bodyText, term), 5) * 4;
       });
 
-      const references = unique(
+      const inferredReferences = unique(
         [...content.matchAll(/(?:^|[\s`(])((?:src\/ai-kit|\.cursor\/rules)\/[\w./-]+)/gm)].map((match) => match[1])
       );
-
-      const rules = unique([
-        ...findRules(root, file),
-        ...references.filter((reference) => reference.startsWith(".cursor/rules/")),
-      ]);
+      const contract = contracts && contracts.get(relativePath);
+      const useFallback = missingContractFile || !contract;
+      const references = useFallback ? inferredReferences : [...contract.references];
+      const rules = useFallback
+        ? unique([...findRules(root, file), ...inferredReferences.filter((reference) => reference.startsWith(".cursor/rules/"))])
+        : unique([...contract.rules, ".cursor/rules/global/base.mdc", ".cursor/rules/global/typescript.mdc"]);
+      if (useFallback) {
+        warnings.push({
+          code: "CONTRACT_FALLBACK",
+          path: relativePath,
+          message: missingContractFile
+            ? `缺少 prompts/asset-contracts.json，使用兼容性资产推断：${relativePath}`
+            : `Prompt 缺少资产合同，使用兼容性资产推断：${relativePath}`,
+        });
+      }
 
       return {
         path: relativePath,
@@ -138,6 +159,7 @@ function searchPrompts(query, options = {}) {
     query,
     terms,
     root,
+    warnings,
     matches: results.slice(0, Math.max(1, Number(options.limit) || 5)),
   };
 }
