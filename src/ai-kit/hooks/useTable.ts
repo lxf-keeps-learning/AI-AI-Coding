@@ -1,79 +1,123 @@
-import { reactive, ref } from 'vue'
+import { reactive, ref, shallowRef, type Ref, type ShallowRef } from 'vue'
 
-/**
- * useTable —— 通用表格 Hook
- *
- * 功能：
- * - tableData / loading / pagination 响应式状态
- * - handleSearch / handleReset / refresh
- * - 勾选行管理（selection）
- * - 分页事件处理
- *
- * AI 规则：
- * 所有列表页 Table 优先使用本 hook，禁止在页面内裸声明 tableData / loading / pagination
- *
- * 用法示例：
- * ```ts
- * const { tableData, loading, pagination, fetchList, handleSearch, handleReset } =
- *   useTable<UserRecord>((p) => getUserList(p))
- * ```
- */
 export interface PaginationState {
   page: number
   pageSize: number
   total: number
 }
 
-export function useTable<T = unknown, P extends Record<string, unknown> = Record<string, unknown>>(
-  apiFn: (params: P & { page: number; pageSize: number }) => Promise<{ list: T[]; total: number }>
-) {
-  const tableData = ref<T[]>([])
-  const loading = ref(false)
-  const selection = ref<T[]>([])
+export interface TableResponse<T> {
+  list: T[]
+  total: number
+}
 
+export interface UseTableOptions {
+  initialPage?: number
+  initialPageSize?: number
+  onError?: (error: unknown) => void
+}
+
+export interface UseTableReturn<T, P extends Record<string, unknown>> {
+  tableData: ShallowRef<T[]>
+  loading: Ref<boolean>
+  error: ShallowRef<unknown | null>
+  pagination: PaginationState
+  selection: Ref<T[]>
+  fetchList: (params?: P) => Promise<boolean>
+  refresh: () => Promise<boolean>
+  cancel: () => void
+  handleSearch: (params: P) => Promise<boolean>
+  handleReset: () => Promise<boolean>
+  handlePageChange: (page: number) => Promise<boolean>
+  handleSizeChange: (size: number) => Promise<boolean>
+  handleSelectionChange: (rows: T[]) => void
+}
+
+/**
+ * useTable —— 管理列表数据、分页、选择和请求状态
+ *
+ * 功能：
+ * - 统一 tableData / pagination / loading / error / selection
+ * - 搜索、重置、翻页和刷新使用同一请求入口
+ * - 只允许最后一次请求更新列表，避免并发响应覆盖
+ *
+ * AI 规则：
+ * 所有分页列表优先使用本 hook，禁止页面重复声明 tableData/loading/pagination
+ * API 必须返回 { list, total }，其它响应结构在 service 层适配
+ *
+ * 用法示例：
+ * ```ts
+ * const table = useTable<User, UserQuery>(getUserList)
+ * onMounted(table.fetchList)
+ * ```
+ */
+export function useTable<T, P extends Record<string, unknown> = Record<string, unknown>>(
+  apiFn: (params: P & { page: number; pageSize: number }) => Promise<TableResponse<T>>,
+  options: UseTableOptions = {}
+): UseTableReturn<T, P> {
+  const tableData = shallowRef<T[]>([])
+  const loading = ref(false)
+  const error = shallowRef<unknown | null>(null)
+  const selection = ref<T[]>([]) as Ref<T[]>
   const pagination = reactive<PaginationState>({
-    page: 1,
-    pageSize: 20,
+    page: options.initialPage ?? 1,
+    pageSize: options.initialPageSize ?? 20,
     total: 0,
   })
-
   let currentParams = {} as P
   let requestId = 0
 
-  async function fetchList(params?: P) {
+  async function fetchList(params?: P): Promise<boolean> {
     const currentRequestId = ++requestId
-    if (params) currentParams = params
+    if (params) currentParams = { ...params }
     loading.value = true
+    error.value = null
     try {
-      const res = await apiFn({ ...currentParams, page: pagination.page, pageSize: pagination.pageSize })
-      if (currentRequestId !== requestId) return
-      tableData.value = res.list
-      pagination.total = res.total
+      const result = await apiFn({ ...currentParams, page: pagination.page, pageSize: pagination.pageSize })
+      if (currentRequestId !== requestId) return false
+      tableData.value = result.list
+      pagination.total = result.total
+      selection.value = []
+      return true
+    } catch (caughtError) {
+      if (currentRequestId !== requestId) return false
+      error.value = caughtError
+      options.onError?.(caughtError)
+      return false
     } finally {
       if (currentRequestId === requestId) loading.value = false
     }
   }
 
+  function refresh() {
+    return fetchList()
+  }
+
+  function cancel() {
+    requestId += 1
+    loading.value = false
+  }
+
   function handleSearch(params: P) {
     pagination.page = 1
-    fetchList(params)
+    return fetchList(params)
   }
 
   function handleReset() {
     pagination.page = 1
     currentParams = {} as P
-    fetchList()
+    return fetchList()
   }
 
   function handlePageChange(page: number) {
     pagination.page = page
-    fetchList()
+    return fetchList()
   }
 
   function handleSizeChange(size: number) {
     pagination.pageSize = size
     pagination.page = 1
-    fetchList()
+    return fetchList()
   }
 
   function handleSelectionChange(rows: T[]) {
@@ -83,9 +127,12 @@ export function useTable<T = unknown, P extends Record<string, unknown> = Record
   return {
     tableData,
     loading,
+    error,
     pagination,
     selection,
     fetchList,
+    refresh,
+    cancel,
     handleSearch,
     handleReset,
     handlePageChange,

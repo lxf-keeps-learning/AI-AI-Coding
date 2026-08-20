@@ -8,11 +8,11 @@
 
 | 组件 | 路径 | 覆盖场景 | 禁用的裸用法 |
 |------|------|----------|--------------|
-| BaseSearch | `src/ai-kit/search/BaseSearch.vue` | 所有列表页搜索区(基础/折叠/高级) | 页面里裸写 `<el-form>` + 搜索按钮 |
+| BaseSearch | `src/ai-kit/search/BaseSearch.vue` | 基础列表页搜索区、超过 3 项折叠、移动端单列 | 重复编写相同查询按钮和折叠状态 |
 | BaseDialog | `src/ai-kit/components/BaseDialog.vue` | 所有 Dialog 弹窗 | `<el-dialog>` 直接出现在业务页面 |
 | BaseDrawer | `src/ai-kit/components/BaseDrawer.vue` | 所有 Drawer 抽屉 | `<el-drawer>` 直接出现在业务页面 |
-| BaseForm | `src/ai-kit/forms/BaseForm.vue` | 基础表单、动态表单、步骤表单 | 页面里裸写 `<el-form>` 并自行管理校验 |
-| BaseTree | `src/ai-kit/tree/BaseTree.vue` | 所有树结构(含懒加载、勾选、过滤) | `<el-tree>` 直接出现在业务页面 |
+| BaseForm | `src/ai-kit/forms/BaseForm.vue` | 基础 1/2 列表单与统一校验方法 | 重复封装相同的表单布局和校验暴露 |
+| BaseTree | `src/ai-kit/tree/BaseTree.vue` | 基础树、懒加载、勾选、过滤和数据状态 | 重复封装相同树状态 |
 | BaseChart | `src/ai-kit/charts/BaseChart.vue` | 所有 ECharts 图表 | `echarts.init(...)` 出现在页面或业务组件 |
 | list-page-template | `src/ai-kit/components/list-page-template.vue` | 所有列表页结构参考 | 列表页结构与该模板差异巨大 |
 
@@ -34,11 +34,11 @@
 | `src/ai-kit/utils/debounce.ts` | 防抖 |
 | `src/ai-kit/utils/throttle.ts` | 节流 |
 
-业务代码里出现自写 `setTimeout`/`clearTimeout` 形式的防抖节流 = 违反复用。
+业务代码里出现语义相同的自写 `setTimeout`/`clearTimeout` 防抖节流时，应优先复用这里的工具；业务特定调度逻辑不在此限制内。
 
 ## 模板
 
-`src/ai-kit/templates/` 计划包含 list-page-template.vue / crud-template.vue / dialog-form-template.vue / chart-template.ts,作为生成代码的"骨架"。新建议的资产如果属于模板范畴,放在这里而非 components/。
+当前可编译的列表页骨架是 `src/ai-kit/components/list-page-template.vue`。`src/ai-kit/templates/` 暂未发布可用模板；新增模板必须同时补类型检查和生成测试。
 
 ## 配套 `.cursor/rules/` 索引
 
@@ -71,4 +71,4 @@
 - 禁止重复封装 request / loading / error / data
 - 单个页面文件禁止超过 500 行
 - API 调用必须放 `services/`,页面禁止直接 fetch / axios
-- 每个组件必须有 loading / empty / error 状态
+- 数据驱动组件必须有 loading / empty / error 状态；纯展示或操作容器按实际职责提供状态

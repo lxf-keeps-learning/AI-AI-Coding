@@ -1,7 +1,7 @@
 # ai-kit —— 前端 AI 工程公共能力库
 
 > **核心原则：不让 AI 从 0 生成，让 AI 基于规范生成。**
-> 所有组件和 Hook 均附带 AI 注释，Cursor 会自动将其纳入上下文。
+> 所有组件和 Hook 均附带 AI 注释。通过 AICoding 安装器接入业务项目后，Cursor/Codex 会先检索 Prompt，再按结果读取对应规则和实现文件。
 
 ---
 
@@ -12,7 +12,7 @@ src/ai-kit/
 ├── components/
 │   ├── BaseDialog.vue          ← 通用弹窗（必须复用）
 │   ├── BaseDrawer.vue          ← 通用抽屉（必须复用）
-│   └── list-page-template.vue  ← 列表页模板（所有列表页参考）
+│   └── list-page-template.vue  ← 可编译的列表页参考实现
 │
 ├── forms/
 │   └── BaseForm.vue            ← 通用表单（必须复用）
@@ -39,8 +39,20 @@ src/ai-kit/
 │   └── throttle.ts
 │
 └── templates/
-    └── readme.md
+    └── readme.md               ← 后续模板边界说明
 ```
+
+## 已实现的运行契约
+
+- `BaseDialog` / `BaseDrawer`：支持异步提交 loading、关闭拦截、footer slot；loading 时锁定误关闭。
+- `BaseSearch`：超过 3 个 `el-form-item` 自动显示展开/收起，小屏改为单列。
+- `BaseForm`：1/2 列响应式布局，暴露 `validate`、`resetFields`、`clearValidate`、`scrollToField`。
+- `BaseChart` / `BaseTree`：具备 loading、empty、error、retry 状态。
+- `useRequest` / `useTable` / `useTree`：后发请求优先，旧请求不会覆盖新结果；暴露 error 与重试入口。
+- `useDialog`：重复打开会以 `false` 结束上一次 Promise，不遗留悬空调用。
+- `useChart`：图表实例是实时 `shallowRef`，支持挂载前 option/loading 缓存、ResizeObserver、主题重建与销毁。
+
+这些文件是“可复制的参考实现”，不是要求业务代码通过绝对路径运行时导入。接入方式见 `docs/实际项目接入指南.md`。
 
 ---
 
@@ -104,6 +116,8 @@ src/ai-kit/
 生成「月度销售趋势」折线图，调用 getMonthlySales()，显示 loading 和空状态
 ```
 
+真实业务中还应传入 `error`、监听 `retry`，并用业务数据长度显式设置 `empty`，不要只判断响应对象是否存在。
+
 ### Code Review
 
 ```
@@ -120,10 +134,10 @@ review 当前 diff，重点检查：
 
 | 禁止 | 改用 |
 |------|------|
-| 裸用 el-dialog | BaseDialog + useDialog |
-| 裸用 el-drawer | BaseDrawer + useDialog |
-| 裸调 echarts.init | BaseChart 或 useChart |
-| 页面内裸声明 tableData/loading/pagination | useTable |
-| 页面内裸声明多个搜索 ref | useSearch |
+| 在已经接入 ai-kit 的业务模块中重复封装 el-dialog | BaseDialog + useDialog |
+| 在已经接入 ai-kit 的业务模块中重复封装 el-drawer | BaseDrawer + useDialog |
+| 页面内裸调 echarts.init | BaseChart 或 useChart |
+| 页面内重复管理 tableData/loading/pagination | useTable |
+| 页面内用多个独立 ref 表达同一组搜索条件 | useSearch |
 | 重复实现 debounce/throttle | src/ai-kit/utils/ |
 | 重复封装 loading/error/data | useRequest |

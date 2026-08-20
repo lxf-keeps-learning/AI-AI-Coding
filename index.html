@@ -75,6 +75,25 @@
         </aside>
       </main>
 
+      <section class="panel prompt-catalog" aria-labelledby="prompt-catalog-title">
+        <div class="panel__head prompt-catalog__head">
+          <div>
+            <h2 class="panel__label" id="prompt-catalog-title">项目 Prompt</h2>
+            <p class="panel__desc prompt-catalog__desc">来自 prompts/ 目录，点击即可插入编辑区。</p>
+          </div>
+          <span class="panel__hint" id="prompt-result-count"></span>
+        </div>
+        <div class="prompt-filters">
+          <label class="sr-only" for="prompt-search">搜索 Prompt</label>
+          <input id="prompt-search" type="search" placeholder="搜索标题、分类或内容…" autocomplete="off" />
+          <label class="sr-only" for="prompt-category">Prompt 分类</label>
+          <select id="prompt-category">
+            <option value="">全部分类</option>
+          </select>
+        </div>
+        <div id="prompt-catalog-list" class="prompt-catalog__list"></div>
+      </section>
+
       <footer class="footer">
         <span>数据仅存于本机 · 草稿自动保存</span>
         <span class="footer__sep">·</span>
@@ -85,6 +104,7 @@
     </div>
 
     <script src="js/prompt-utils.js"></script>
+    <script src="js/prompt-catalog.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

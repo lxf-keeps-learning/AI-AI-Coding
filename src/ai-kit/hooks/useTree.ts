@@ -1,57 +1,72 @@
-import { ref } from 'vue'
+import { ref, shallowRef, type Ref, type ShallowRef } from 'vue'
+
+export type TreeKey = string | number
+
+export interface UseTreeReturn<T> {
+  treeData: ShallowRef<T[]>
+  loading: Ref<boolean>
+  error: ShallowRef<unknown | null>
+  filterText: Ref<string>
+  checkedKeys: Ref<TreeKey[]>
+  expandedKeys: Ref<TreeKey[]>
+  fetchTree: () => Promise<boolean>
+  filterNode: (value: string, data: Record<string, unknown>, label?: string) => boolean
+  resetChecked: () => void
+}
 
 /**
- * useTree —— Tree 组件通用状态管理
+ * useTree —— 管理树数据、筛选、勾选、展开和请求状态
  *
  * 功能：
- * - treeData 数据维护 + loading
- * - 搜索过滤（filterText 驱动 el-tree filter-node-method）
- * - 勾选 / 展开节点 keys 管理
- * - 刷新树数据
+ * - 统一 treeData / loading / error
+ * - 维护 filterText、checkedKeys 和 expandedKeys
+ * - 并发刷新时只应用最后一次结果
  *
  * AI 规则：
- * 所有 Tree 页面优先使用本 hook，禁止在页面内裸声明 treeData / filterText
+ * 所有远程树数据场景优先使用本 hook，禁止页面重复管理树状态
+ * 与 BaseTree 配套使用；纯静态小树可以只使用 BaseTree
  *
  * 用法示例：
  * ```ts
- * const { treeData, loading, filterText, checkedKeys, fetchTree } =
- *   useTree(() => getDeptTree())
+ * const tree = useTree<DeptNode>(getDeptTree)
+ * onMounted(tree.fetchTree)
  * ```
  */
-export function useTree<T = unknown>(apiFn: () => Promise<T[]>) {
-  const treeData = ref<T[]>([])
+export function useTree<T>(apiFn: () => Promise<T[]>): UseTreeReturn<T> {
+  const treeData = shallowRef<T[]>([])
   const loading = ref(false)
+  const error = shallowRef<unknown | null>(null)
   const filterText = ref('')
-  const checkedKeys = ref<(string | number)[]>([])
-  const expandedKeys = ref<(string | number)[]>([])
+  const checkedKeys = ref<TreeKey[]>([])
+  const expandedKeys = ref<TreeKey[]>([])
+  let requestId = 0
 
-  async function fetchTree() {
+  async function fetchTree(): Promise<boolean> {
+    const currentRequestId = ++requestId
     loading.value = true
+    error.value = null
     try {
-      treeData.value = await apiFn()
+      const result = await apiFn()
+      if (currentRequestId !== requestId) return false
+      treeData.value = result
+      return true
+    } catch (caughtError) {
+      if (currentRequestId !== requestId) return false
+      error.value = caughtError
+      return false
     } finally {
-      loading.value = false
+      if (currentRequestId === requestId) loading.value = false
     }
   }
 
-  /** 配合 el-tree :filter-node-method 使用 */
   function filterNode(value: string, data: Record<string, unknown>, label = 'label') {
     if (!value) return true
-    return String(data[label] ?? '').includes(value)
+    return String(data[label] ?? '').toLocaleLowerCase().includes(value.toLocaleLowerCase())
   }
 
   function resetChecked() {
     checkedKeys.value = []
   }
 
-  return {
-    treeData,
-    loading,
-    filterText,
-    checkedKeys,
-    expandedKeys,
-    fetchTree,
-    filterNode,
-    resetChecked,
-  }
+  return { treeData, loading, error, filterText, checkedKeys, expandedKeys, fetchTree, filterNode, resetChecked }
 }

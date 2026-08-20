@@ -19,6 +19,10 @@
   var varListEl = document.getElementById("var-list");
   var templateListEl = document.getElementById("template-list");
   var historyListEl = document.getElementById("history-list");
+  var promptCatalogEl = document.getElementById("prompt-catalog-list");
+  var promptSearchEl = document.getElementById("prompt-search");
+  var promptCategoryEl = document.getElementById("prompt-category");
+  var promptResultCountEl = document.getElementById("prompt-result-count");
   var toastEl = document.getElementById("toast");
   var btnApplyVars = document.getElementById("btn-apply-vars");
 
@@ -416,6 +420,83 @@
     });
   }
 
+  function getPromptCatalog() {
+    return Array.isArray(window.PROMPT_CATALOG) ? window.PROMPT_CATALOG : [];
+  }
+
+  function renderPromptCategories() {
+    var categories = [];
+    var seen = Object.create(null);
+    getPromptCatalog().forEach(function (prompt) {
+      if (!seen[prompt.category]) {
+        seen[prompt.category] = true;
+        categories.push(prompt.category);
+      }
+    });
+    categories.sort().forEach(function (category) {
+      var option = document.createElement("option");
+      option.value = category;
+      option.textContent = category;
+      promptCategoryEl.appendChild(option);
+    });
+  }
+
+  function renderPromptCatalog() {
+    var keyword = promptSearchEl.value.trim().toLowerCase();
+    var category = promptCategoryEl.value;
+    var prompts = getPromptCatalog().filter(function (prompt) {
+      var matchesCategory = !category || prompt.category === category;
+      var haystack = (prompt.title + " " + prompt.category + " " + prompt.content).toLowerCase();
+      return matchesCategory && (!keyword || haystack.includes(keyword));
+    });
+
+    promptCatalogEl.innerHTML = "";
+    promptResultCountEl.textContent = prompts.length + " / " + getPromptCatalog().length + " 个";
+
+    if (!prompts.length) {
+      var empty = document.createElement("p");
+      empty.className = "prompt-catalog__empty";
+      empty.textContent = "没有匹配的 Prompt";
+      promptCatalogEl.appendChild(empty);
+      return;
+    }
+
+    prompts.forEach(function (prompt) {
+      var card = document.createElement("article");
+      card.className = "prompt-card";
+      card.dataset.category = prompt.category;
+      var meta = document.createElement("div");
+      meta.className = "prompt-card__meta";
+      var categoryEl = document.createElement("span");
+      categoryEl.className = "prompt-card__category";
+      categoryEl.textContent = prompt.category;
+      var pathEl = document.createElement("span");
+      pathEl.textContent = prompt.path;
+      var title = document.createElement("h3");
+      title.className = "prompt-card__title";
+      title.textContent = prompt.title;
+      var preview = document.createElement("p");
+      preview.className = "prompt-card__preview";
+      preview.textContent = prompt.preview;
+      var insertButton = document.createElement("button");
+      insertButton.type = "button";
+      insertButton.className = "btn btn--accent btn--block";
+      insertButton.textContent = "插入编辑区";
+      insertButton.addEventListener("click", function () {
+        var separator = editor.value && !editor.value.endsWith("\n") ? "\n\n" : "";
+        insertAtCursor(separator + prompt.content.trim() + "\n");
+        showToast("已插入：" + prompt.title);
+      });
+      meta.appendChild(categoryEl);
+      meta.appendChild(pathEl);
+      card.appendChild(meta);
+      card.appendChild(title);
+      card.appendChild(preview);
+      card.appendChild(insertButton);
+      promptCatalogEl.appendChild(card);
+    });
+  }
+
   function handleKeyboardShortcuts(event) {
     if (!(event.ctrlKey || event.metaKey)) return;
     if (event.key.toLowerCase() === "s") {
@@ -433,6 +514,8 @@
     scheduleDraftSave();
   });
   document.addEventListener("keydown", handleKeyboardShortcuts);
+  promptSearchEl.addEventListener("input", renderPromptCatalog);
+  promptCategoryEl.addEventListener("change", renderPromptCatalog);
   document.getElementById("btn-scan-vars").addEventListener("click", scanVariables);
   btnApplyVars.addEventListener("click", applyVariableReplacement);
   document.getElementById("btn-format").addEventListener("click", formatPrompt);
@@ -445,5 +528,7 @@
   updateCharCount();
   renderTemplates();
   renderHistory();
+  renderPromptCategories();
+  renderPromptCatalog();
   restoreDraft();
 })();

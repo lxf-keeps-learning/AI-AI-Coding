@@ -1,48 +1,34 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { ElTree } from 'element-plus'
+import type { TreeKey } from '../hooks/useTree'
 
 /**
- * BaseTree —— 通用树组件
+ * BaseTree —— 提供过滤、勾选、展开、空态和错误态的树容器
  *
- * 功能：
- * - 搜索过滤（filterText 驱动）
- * - checkbox 勾选 / 展开收起
- * - lazy load（配置 lazy + load prop）
- * - loading 骨架
- * - 节点点击 / 勾选 emit
- * - 支持 dark mode
- *
- * AI 规则：
- * 所有树结构展示优先使用本组件，通过 useTree hook 管理数据
- *
- * 用法示例：
- * ```vue
- * <BaseTree
- *   :data="treeData"
- *   :loading="loading"
- *   v-model:checked-keys="checkedKeys"
- *   @node-click="onNodeClick"
- * />
- * ```
+ * 使用场景：部门树、菜单树、懒加载树、可勾选权限树
+ * AI 规则：树结构展示优先使用本组件，远程数据配合 useTree；禁止业务页面重复封装 el-tree 状态
+ * Props：data、loading、error、nodeKey、label、children、checkedKeys、expandedKeys、lazy、load
+ * Emits：update:checkedKeys、update:expandedKeys、node-click、check、retry
+ * Slots：node、empty、error
  */
-interface TreeNode {
+export interface TreeRecord {
   [key: string]: unknown
 }
 
 interface Props {
-  data?: TreeNode[]
+  data?: TreeRecord[]
   loading?: boolean
+  error?: unknown
   nodeKey?: string
   label?: string
   children?: string
   showCheckbox?: boolean
-  checkedKeys?: (string | number)[]
+  checkedKeys?: TreeKey[]
+  expandedKeys?: TreeKey[]
   defaultExpandAll?: boolean
-  /** lazy load 函数 */
-  load?: (node: TreeNode, resolve: (data: TreeNode[]) => void) => void
+  load?: (node: unknown, resolve: (data: TreeRecord[]) => void) => void
   lazy?: boolean
-  /** 搜索文本（外部传入即可触发过滤） */
   filterText?: string
 }
 
@@ -54,42 +40,66 @@ const props = withDefaults(defineProps<Props>(), {
   children: 'children',
   showCheckbox: false,
   checkedKeys: () => [],
+  expandedKeys: () => [],
   defaultExpandAll: false,
   lazy: false,
   filterText: '',
 })
 
 const emit = defineEmits<{
-  'update:checkedKeys': [keys: (string | number)[]]
-  'node-click': [node: TreeNode]
-  check: [node: TreeNode, checkedInfo: unknown]
+  'update:checkedKeys': [keys: TreeKey[]]
+  'update:expandedKeys': [keys: TreeKey[]]
+  'node-click': [node: TreeRecord]
+  check: [node: TreeRecord, checkedInfo: unknown]
+  retry: []
 }>()
 
 const treeRef = ref<InstanceType<typeof ElTree>>()
+const currentExpandedKeys = new Set<TreeKey>(props.expandedKeys)
 
-// 搜索过滤
 watch(
   () => props.filterText,
-  (val) => treeRef.value?.filter(val)
+  (value) => treeRef.value?.filter(value),
+  { immediate: true }
 )
 
-function filterNode(value: string, data: TreeNode) {
+watch(
+  () => props.checkedKeys,
+  (keys) => treeRef.value?.setCheckedKeys(keys),
+  { deep: true }
+)
+
+function filterNode(value: string, data: TreeRecord) {
   if (!value) return true
-  return String(data[props.label] ?? '').includes(value)
+  return String(data[props.label] ?? '').toLocaleLowerCase().includes(value.toLocaleLowerCase())
 }
 
-function handleCheck(_node: TreeNode, info: { checkedKeys: (string | number)[] }) {
+function handleCheck(node: TreeRecord, info: { checkedKeys: TreeKey[] }) {
   emit('update:checkedKeys', info.checkedKeys)
-  emit('check', _node, info)
+  emit('check', node, info)
 }
 
-function handleNodeClick(node: TreeNode) {
-  emit('node-click', node)
+function getNodeKey(node: TreeRecord): TreeKey | null {
+  const key = node[props.nodeKey]
+  return typeof key === 'string' || typeof key === 'number' ? key : null
 }
 
-/** 供父组件调用：获取选中节点 */
+function handleExpand(node: TreeRecord) {
+  const key = getNodeKey(node)
+  if (key === null) return
+  currentExpandedKeys.add(key)
+  emit('update:expandedKeys', [...currentExpandedKeys])
+}
+
+function handleCollapse(node: TreeRecord) {
+  const key = getNodeKey(node)
+  if (key === null) return
+  currentExpandedKeys.delete(key)
+  emit('update:expandedKeys', [...currentExpandedKeys])
+}
+
 function getCheckedNodes() {
-  return treeRef.value?.getCheckedNodes()
+  return treeRef.value?.getCheckedNodes() ?? []
 }
 
 defineExpose({ getCheckedNodes, treeRef })
@@ -97,23 +107,32 @@ defineExpose({ getCheckedNodes, treeRef })
 
 <template>
   <div class="base-tree" v-loading="loading">
-    <!-- 搜索框由父组件传入 filterText 驱动，此处不内置，保持职责单一 -->
+    <div v-if="error" class="base-tree__state">
+      <slot name="error" :error="error" :retry="() => emit('retry')">
+        <el-alert title="树数据加载失败" type="error" show-icon :closable="false" />
+        <el-button type="primary" link @click="emit('retry')">重试</el-button>
+      </slot>
+    </div>
+
     <el-tree
+      v-else
       ref="treeRef"
       :data="data"
       :node-key="nodeKey"
       :props="{ label, children }"
       :show-checkbox="showCheckbox"
       :default-checked-keys="checkedKeys"
+      :default-expanded-keys="expandedKeys"
       :default-expand-all="defaultExpandAll"
       :lazy="lazy"
       :load="load"
       :filter-node-method="filterNode"
       highlight-current
       @check="handleCheck"
-      @node-click="handleNodeClick"
+      @node-click="(node: TreeRecord) => emit('node-click', node)"
+      @node-expand="handleExpand"
+      @node-collapse="handleCollapse"
     >
-      <!-- 自定义节点内容 -->
       <template #default="{ node, data: nodeData }">
         <slot name="node" :node="node" :data="nodeData">
           <span class="base-tree__label">{{ node.label }}</span>
@@ -121,7 +140,9 @@ defineExpose({ getCheckedNodes, treeRef })
       </template>
     </el-tree>
 
-    <el-empty v-if="!loading && !data.length" description="暂无数据" :image-size="60" />
+    <slot v-if="!error && !loading && !data.length" name="empty">
+      <el-empty description="暂无数据" :image-size="60" />
+    </slot>
   </div>
 </template>
 
@@ -129,6 +150,14 @@ defineExpose({ getCheckedNodes, treeRef })
 .base-tree {
   width: 100%;
   min-height: 60px;
+}
+.base-tree__state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.base-tree__state :deep(.el-alert) {
+  flex: 1;
 }
 .base-tree__label {
   font-size: 14px;

@@ -26,19 +26,19 @@ import { useDialog } from '@/ai-kit/hooks/useDialog'
 import { ref } from 'vue'
 
 const dialog = useDialog<{ id?: number; name: string }>()
-const formRef = ref()
+const formRef = ref<InstanceType<typeof BaseForm>>()
 const form = ref({ name: '' })
 
 async function handleConfirm() {
   const ok = await formRef.value?.validate()
   if (!ok) return
-  dialog.loading.value = true
+  dialog.setLoading(true)
   try {
     // await saveApi(form.value)
     dialog.confirm()
     fetchList()
   } finally {
-    dialog.loading.value = false
+    dialog.setLoading(false)
   }
 }
 </script>
@@ -67,3 +67,6 @@ async function handleConfirm() {
 - 确认按钮显示 loading
 - ESC / 关闭图标触发 dialog.close()
 - 表单校验在 confirm 回调中、接口调用前执行
+- loading 期间关闭图标、ESC 和取消按钮不可用，避免提交中销毁表单
+- 需要脏检查时传入 `beforeClose`，返回 false 阻止关闭
+- 异步 `beforeClose` 失败时监听 `close-error`，提供反馈或记录日志

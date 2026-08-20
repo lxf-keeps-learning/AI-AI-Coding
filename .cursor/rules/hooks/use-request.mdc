@@ -1,5 +1,5 @@
 ---
-description: useRequest：异步请求封装 hook，统一 loading/error/data 状态
+description: useRequest：异步请求状态、并发结果与刷新管理
 alwaysApply: false
 ---
 
@@ -7,34 +7,21 @@ alwaysApply: false
 
 位置：`src/ai-kit/hooks/useRequest.ts`
 
-### API
-
 ```ts
-const { data, loading, error, run, refresh } = useRequest(apiFn, {
-  immediate: true,      // 立即执行
-  initialData: [],      // 初始值
-  onSuccess: (data) => {},
-  onError: (err) => {},
+const request = useRequest(getUserById)
+await request.run(userId)
+
+const immediateRequest = useRequest(getUserById, {
+  immediate: true,
+  defaultParams: [userId],
+  initialData: null,
 })
 ```
 
-### 用法
+规则：
 
-```ts
-// 立即执行
-const { data, loading } = useRequest(getUserList, { immediate: true })
-
-// 手动触发（带参数）
-const { data, loading, run } = useRequest(getUserById)
-run(userId)
-
-// 刷新（重用上次参数）
-refresh()
-```
-
-### 规则
-
-- 禁止在页面级重复封装 loading / error / data
-- 所有接口调用优先 useRequest，复杂场景（分页）用 useTable
-- immediate: true 时无需在 onMounted 手动调用
-- 接口函数放 services/，不在 hook 内写业务逻辑
+- 页面级 `data/loading/error` 优先使用 useRequest，分页列表使用 useTable。
+- 有参数的 `immediate` 请求必须提供 `defaultParams`。
+- `cancel()` 仅使当前响应失效；需要真正中止 HTTP 时，在 service 层使用 AbortController。
+- 组件必须渲染 `error` 和重试入口，不能只显示 loading。
+- API 放在 services，hook 内不写业务判断。

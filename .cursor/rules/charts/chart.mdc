@@ -14,7 +14,7 @@ alwaysApply: false
 
 - 禁止在组件内裸调用 `echarts.init`
 - 禁止不销毁（必须 onUnmounted dispose）
-- 禁止频繁 setOption（useChart 内置节流）
+- 禁止对每个高频事件立即 setOption；按业务频率显式设置更新延迟
 
 ### 方式一：BaseChart 组件（推荐，适合大多数场景）
 
@@ -24,7 +24,7 @@ import BaseChart from '@/ai-kit/charts/BaseChart.vue'
 import { useRequest } from '@/ai-kit/hooks/useRequest'
 import { computed } from 'vue'
 
-const { data, loading } = useRequest(getChartData, { immediate: true })
+const { data, loading, error, refresh } = useRequest(getChartData, { immediate: true })
 
 const option = computed(() => ({
   tooltip: { trigger: 'axis' },
@@ -35,7 +35,14 @@ const option = computed(() => ({
 </script>
 
 <template>
-  <BaseChart :option="option" :loading="loading" height="300px" />
+  <BaseChart
+    :option="option"
+    :loading="loading"
+    :empty="!data?.values.length"
+    :error="error"
+    height="300px"
+    @retry="refresh"
+  />
 </template>
 ```
 
@@ -52,7 +59,7 @@ const { setOption, showLoading, hideLoading } = useChart(chartEl)
 onMounted(() => {
   setOption({
     series: [{ type: 'bar', data: [1, 2, 3] }]
-  })
+  }, 100)
 })
 </script>
 
@@ -63,7 +70,7 @@ onMounted(() => {
 
 ### 性能要求
 
-- setOption 使用节流（useChart 默认 200ms，实时数据可调整）
+- 默认立即 setOption；高频数据可通过 BaseChart `updateDelay` 或 `setOption(option, delay)` 延迟合并更新
 - 大数据集用 dataset 或增量更新，避免全量 setOption
 - ResizeObserver 自动处理容器尺寸变化（BaseChart / useChart 内置）
 - 组件销毁时自动 dispose（useChart 内置 onUnmounted）
@@ -74,3 +81,5 @@ onMounted(() => {
 - [ ] 空数据：option 为空时显示空状态
 - [ ] 响应式：容器 resize 自动重绘
 - [ ] 内存安全：组件销毁时 dispose
+- [ ] 错误恢复：error 状态展示重试入口
+- option 使用 computed/不可变更新；不要依赖深层 mutation 触发图表刷新

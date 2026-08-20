@@ -1,23 +1,14 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 /**
- * BaseDrawer —— 通用抽屉组件
+ * BaseDrawer —— 提供响应式尺寸、关闭拦截和提交状态的抽屉容器
  *
- * 功能：
- * - 响应式宽度（桌面 480px / 移动端 100%）
- * - 内容区独立滚动，不产生双滚动条
- * - 支持 loading 遮罩
- * - 长表单离开提示（通过 beforeClose 暴露给业务）
- * - 支持 dark mode
- *
- * AI 规则：
- * 所有抽屉组件必须基于本组件封装，禁止裸用 el-drawer
- *
- * 用法示例：
- * ```vue
- * <BaseDrawer v-model:visible="visible" title="编辑用户" :loading="loading" @confirm="onSave">
- *   <UserForm ref="formRef" :model="form" />
- * </BaseDrawer>
- * ```
+ * 使用场景：详情编辑、长表单、分步流程
+ * AI 规则：所有业务 Drawer 优先使用本组件，禁止业务页面裸用 el-drawer；与 useDialog 配套使用
+ * Props：visible、title、size、loading、direction、beforeClose、confirmText、cancelText、hideFooter
+ * Emits：update:visible、confirm、cancel、close-error
+ * Slots：default、footer
  */
 interface Props {
   visible: boolean
@@ -28,13 +19,11 @@ interface Props {
   confirmText?: string
   cancelText?: string
   hideFooter?: boolean
-  /** 离开前拦截，返回 false 阻止关闭（用于表单未保存提示） */
   beforeClose?: () => boolean | Promise<boolean>
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
-  size: '480px',
   loading: false,
   direction: 'rtl',
   confirmText: '保 存',
@@ -43,15 +32,26 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:visible': [val: boolean]
+  'update:visible': [value: boolean]
   confirm: []
   cancel: []
+  'close-error': [error: unknown]
 }>()
 
+const responsiveSize = computed(() => {
+  if (props.size) return props.size
+  return props.direction === 'ttb' || props.direction === 'btt'
+    ? 'min(480px, 100vh)'
+    : 'min(480px, 100vw)'
+})
+
 async function requestClose(done?: () => void) {
-  if (props.beforeClose) {
-    const allow = await props.beforeClose()
-    if (!allow) return
+  if (props.loading) return
+  try {
+    if (props.beforeClose && !(await props.beforeClose())) return
+  } catch (error) {
+    emit('close-error', error)
+    return
   }
   emit('update:visible', false)
   emit('cancel')
@@ -61,18 +61,16 @@ async function requestClose(done?: () => void) {
 function handleBeforeClose(done: () => void) {
   void requestClose(done)
 }
-
-function handleConfirm() {
-  emit('confirm')
-}
 </script>
 
 <template>
   <el-drawer
     :model-value="visible"
     :title="title"
-    :size="size"
+    :size="responsiveSize"
     :direction="direction"
+    :show-close="!loading"
+    :close-on-press-escape="!loading"
     :before-close="handleBeforeClose"
     destroy-on-close
   >
@@ -81,12 +79,14 @@ function handleConfirm() {
     </div>
 
     <template v-if="!hideFooter" #footer>
-      <div class="base-drawer__footer">
-        <el-button @click="requestClose()">{{ cancelText }}</el-button>
-        <el-button type="primary" :loading="loading" @click="handleConfirm">
-          {{ confirmText }}
-        </el-button>
-      </div>
+      <slot name="footer">
+        <div class="base-drawer__footer">
+          <el-button :disabled="loading" @click="requestClose()">{{ cancelText }}</el-button>
+          <el-button type="primary" :loading="loading" @click="emit('confirm')">
+            {{ confirmText }}
+          </el-button>
+        </div>
+      </slot>
     </template>
   </el-drawer>
 </template>

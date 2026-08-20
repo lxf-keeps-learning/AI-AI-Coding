@@ -3,11 +3,44 @@
   "version": "0.1.0",
   "private": true,
   "description": "AI 辅助前端编码规范、资产与本地 Prompt Lab",
+  "files": [
+    ".cursor/rules/",
+    "prompts/",
+    "src/ai-kit/",
+    "skills/aicoding-codegen/",
+    "scripts/aicoding.js",
+    "scripts/install-integration.js",
+    "scripts/search-prompts.js",
+    "docs/实际项目接入指南.md",
+    "README.md"
+  ],
+  "bin": {
+    "aicoding": "scripts/aicoding.js"
+  },
   "scripts": {
-    "test": "node --test tests/*.test.js",
-    "check": "node --check js/prompt-utils.js && node --check js/main.js && npm test"
+    "aicoding": "node scripts/aicoding.js",
+    "build:prompts": "node scripts/build-prompt-catalog.js",
+    "check:prompts": "node scripts/build-prompt-catalog.js --check",
+    "check:ai-kit-contracts": "node scripts/validate-ai-kit.js",
+    "type-check": "vue-tsc --noEmit -p tsconfig.ai-kit.json",
+    "test:node": "node --test tests/*.test.js",
+    "test:ai-kit": "vitest run",
+    "test": "npm run test:node && npm run test:ai-kit",
+    "check": "node --check js/prompt-utils.js && node --check js/prompt-catalog.js && node --check js/main.js && node --check scripts/aicoding.js && node --check scripts/search-prompts.js && node --check scripts/install-integration.js && node --check scripts/validate-ai-kit.js && npm run check:prompts && npm run check:ai-kit-contracts && npm run type-check && npm test"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/test-utils": "^2.4.11",
+    "echarts": "^6.1.0",
+    "element-plus": "^2.14.3",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10",
+    "vue": "^3.5.39",
+    "vue-tsc": "^3.3.7"
   }
 }

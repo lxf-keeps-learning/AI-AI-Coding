@@ -1,3 +1,8 @@
+---
+description: TypeScript 类型完整性和 API 响应适配规范
+alwaysApply: true
+---
+
 TypeScript 规范：
 
 要求：
@@ -5,5 +10,6 @@ TypeScript 规范：
 - 必须 interface/type
 - props/emits 必须声明类型
 - API 返回值必须定义类型
-- hooks 必须提供返回类型
+- 公共 hooks 必须提供具名返回类型
 - table/chart/form 数据必须类型化
+- 禁止用类型断言掩盖 API 响应不匹配，响应适配放在 services 层

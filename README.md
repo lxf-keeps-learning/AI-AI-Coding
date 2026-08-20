@@ -10,7 +10,23 @@
 2. Cursor 打开项目，按需使用 `.cursor/rules/`、`prompts/` 与 `src/ai-kit/`
 3. 浏览器直接打开 `index.html`，可使用本地 Prompt Lab 编写和管理提示词
 
-Prompt Lab 无需安装依赖或启动服务，支持模板插入、变量替换、格式化、复制、草稿自动恢复和最多 50 条本地历史快照。所有内容只保存在浏览器 `localStorage`。
+### 接入真实业务项目
+
+```bash
+cd /你的/业务项目
+npm install --save-dev /AICoding所在路径/AI-AI-Coding
+npx aicoding install --target .
+```
+
+重新打开业务项目的 Codex 或 Cursor 会话后，可以直接输入“生成一个折线图”。AI 会自动检索本仓库的 Prompt 和 ai-kit，再结合业务项目生成并验证代码。完整说明见 [实际项目接入指南](./docs/实际项目接入指南.md)。
+
+Prompt Lab 无需安装依赖或启动服务，支持首页展示 `prompts/` 中的项目 Prompt、分类筛选、全文搜索、一键插入、变量替换、格式化、复制、草稿自动恢复和最多 50 条本地历史快照。所有内容只保存在浏览器 `localStorage`。
+
+新增或修改 `prompts/**/*.md` 后，重新生成首页目录：
+
+```bash
+npm run build:prompts
+```
 
 本地校验（需要 Node.js 18+）：
 
@@ -55,7 +71,8 @@ project/
 ├── skills/                 ← 工程化与性能诊断工作流
 ├── docs/ai/                ← AI 协作指南与规范说明
 ├── index.html              ← 本地 Prompt Lab 入口
-├── css/ + js/              ← Prompt Lab 样式与交互
+├── css/ + js/              ← Prompt Lab 样式、交互与生成后的 Prompt 目录
+├── scripts/                ← Prompt 目录生成脚本
 ├── tests/                  ← Prompt Lab 核心逻辑测试
 ├── package.json            ← 零第三方依赖的校验命令
 └── src/ai-kit/             ← 公共组件库（AI 知识库核心）

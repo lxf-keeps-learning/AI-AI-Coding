@@ -7,6 +7,14 @@
 
 ## 当前已收录
 
+### `aicoding-codegen/` — 智能代码生成
+
+供真实业务项目安装使用。用户提出“生成一个折线图”“创建 CRUD 列表页”等前端开发需求时，自动检索本仓库 Prompt 和 ai-kit 参考资产，再结合业务项目的真实依赖、接口和目录生成代码并执行验证。
+
+**接入方式**：`npx aicoding install --target .`
+
+**触发方式**：Codex 支持隐式触发或显式 `$aicoding-codegen`；Cursor 通过安装器生成的项目规则触发。
+
 ### `engineering/` — 可复用资产沉淀
 
 围绕本项目"基于 ai-kit 生成,不从 0 造轮子"的核心理念,提供识别重复 → 判定抽取 → 设计契约 → 同步 AI 注释和 .cursor/rules → 输出改造报告的完整闭环。
@@ -30,6 +38,11 @@
 ```
 skills/
 ├── README.md(当前文件)
+│
+├── aicoding-codegen/
+│   ├── SKILL.md
+│   └── agents/
+│       └── openai.yaml
 │
 ├── engineering/
 │   ├── SKILL.md

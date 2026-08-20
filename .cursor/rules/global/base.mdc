@@ -1,6 +1,11 @@
+---
+description: AICoding 前端工程基础规范与公共资产索引
+alwaysApply: true
+---
+
 你是资深前端工程师。
 
-当前项目技术栈：
+参考技术栈（生成前必须以目标业务项目 `package.json` 为准）：
 - Vue3 + script setup
 - TypeScript（禁止 any）
 - Pinia
@@ -8,7 +13,9 @@
 - Element Plus
 - ECharts
 
-## 公共能力目录（必须优先复用）
+## 公共能力目录（必须优先检查）
+
+以下路径相对 AICoding 知识库根目录。只有目标业务项目已复制或配置 ai-kit 时才能直接 import；否则把实现作为参考，优先适配业务项目已有公共组件和 Hook，禁止导入 AICoding 的绝对路径。
 
 | 能力 | 路径 | 说明 |
 |------|------|------|
@@ -33,16 +40,16 @@
 - 禁止 any，用泛型或具体类型
 - composables 命名 useXxx，放 hooks/ 或 composables/
 - API 调用放 services/，页面禁止直接 fetch/axios
-- 每个组件必须有 loading / empty / error 状态
+- 数据驱动组件必须有适用的 loading / empty / error 状态；纯容器和纯展示组件按实际职责提供
 - 页面文件禁止超过 500 行
-- 禁止重复实现 debounce / throttle（用 `src/ai-kit/utils/`）
-- 禁止重复封装 request（用 `useRequest`）
-- 禁止裸用 el-dialog / el-drawer（用 BaseDialog / BaseDrawer）
-- 禁止裸调 echarts.init（用 BaseChart / useChart）
+- 已接入 ai-kit 时禁止重复实现 debounce / throttle（用 `src/ai-kit/utils/`）
+- 已接入 ai-kit 时禁止重复封装 request（用 `useRequest`）
+- 已接入 ai-kit 时禁止绕过 BaseDialog / BaseDrawer 重复封装弹窗
+- 已接入 ai-kit 时禁止在页面裸调 echarts.init（用 BaseChart / useChart）
 
 ## 生成代码前必做
 
-1. 查看 `src/ai-kit/components/list-page-template.vue` 了解标准结构
-2. 确认需要的 hook 是否已存在于 `src/ai-kit/hooks/`
-3. 确认需要的组件是否已存在于 `src/ai-kit/`
-4. 遵循项目现有风格，不引入新依赖
+1. 检查目标项目技术栈、依赖和已有公共资产
+2. 查看 `src/ai-kit/components/list-page-template.vue` 了解标准结构
+3. 确认需要的 Hook 和组件是否已存在于目标项目或 `src/ai-kit/`
+4. 遵循目标项目现有风格，不因示例擅自引入新依赖

@@ -1,34 +1,24 @@
 <script setup lang="ts">
 /**
- * BaseDialog —— 通用弹窗组件
+ * BaseDialog —— 提供统一关闭拦截和提交状态的弹窗容器
  *
- * 功能：
- * - 统一 loading / 确认 / 取消 / ESC 关闭
- * - 焦点陷阱（el-dialog 内置）
- * - 支持 dark mode（CSS 变量）
- * - 禁止业务强耦合，slot 传入内容
- *
- * AI 规则：
- * 所有弹窗组件必须基于本组件封装，禁止裸用 el-dialog
- *
- * 用法示例：
- * ```vue
- * <BaseDialog v-model:visible="visible" title="新增用户" :loading="loading" @confirm="onConfirm">
- *   <UserForm ref="formRef" :model="form" />
- * </BaseDialog>
- * ```
+ * 使用场景：新增编辑表单、确认流程、自定义内容弹窗
+ * AI 规则：所有业务 Dialog 优先使用本组件，禁止业务页面裸用 el-dialog；与 useDialog 配套使用
+ * Props：visible、title、width、loading、beforeClose、confirmText、cancelText、hideFooter
+ * Emits：update:visible、confirm、cancel、close-error
+ * Slots：default、footer
  */
 interface Props {
   visible: boolean
   title?: string
   width?: string | number
   loading?: boolean
-  /** 点击遮罩是否关闭 */
   closeOnClickModal?: boolean
+  closeOnPressEscape?: boolean
   confirmText?: string
   cancelText?: string
-  /** 隐藏底部操作栏 */
   hideFooter?: boolean
+  beforeClose?: () => boolean | Promise<boolean>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,24 +26,34 @@ const props = withDefaults(defineProps<Props>(), {
   width: '520px',
   loading: false,
   closeOnClickModal: false,
+  closeOnPressEscape: true,
   confirmText: '确 定',
   cancelText: '取 消',
   hideFooter: false,
 })
 
 const emit = defineEmits<{
-  'update:visible': [val: boolean]
+  'update:visible': [value: boolean]
   confirm: []
   cancel: []
+  'close-error': [error: unknown]
 }>()
 
-function handleClose() {
+async function requestClose(done?: () => void) {
+  if (props.loading) return
+  try {
+    if (props.beforeClose && !(await props.beforeClose())) return
+  } catch (error) {
+    emit('close-error', error)
+    return
+  }
   emit('update:visible', false)
   emit('cancel')
+  done?.()
 }
 
-function handleConfirm() {
-  emit('confirm')
+function handleBeforeClose(done: () => void) {
+  void requestClose(done)
 }
 </script>
 
@@ -63,18 +63,22 @@ function handleConfirm() {
     :title="title"
     :width="width"
     :close-on-click-modal="closeOnClickModal"
+    :close-on-press-escape="closeOnPressEscape && !loading"
+    :show-close="!loading"
+    :before-close="handleBeforeClose"
     destroy-on-close
-    @close="handleClose"
   >
     <slot />
 
     <template v-if="!hideFooter" #footer>
-      <div class="base-dialog__footer">
-        <el-button @click="handleClose">{{ cancelText }}</el-button>
-        <el-button type="primary" :loading="loading" @click="handleConfirm">
-          {{ confirmText }}
-        </el-button>
-      </div>
+      <slot name="footer">
+        <div class="base-dialog__footer">
+          <el-button :disabled="loading" @click="requestClose()">{{ cancelText }}</el-button>
+          <el-button type="primary" :loading="loading" @click="emit('confirm')">
+            {{ confirmText }}
+          </el-button>
+        </div>
+      </slot>
     </template>
   </el-dialog>
 </template>

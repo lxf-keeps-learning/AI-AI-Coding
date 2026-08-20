@@ -1,58 +1,67 @@
 <script setup lang="ts">
+import { computed, onMounted, onUpdated, ref } from 'vue'
+
 /**
- * BaseSearch —— 通用搜索表单组件
+ * BaseSearch —— 提供查询、重置和可折叠字段布局的搜索容器
  *
- * 功能：
- * - 响应式折叠（超过 3 列自动折叠，展开/收起）
- * - 搜索 / 重置 emit 给父组件
- * - 支持 slot 传入任意搜索字段
- * - 支持 dark mode
- *
- * AI 规则：
- * 所有列表页搜索区域必须使用本组件，配合 useSearch hook
- *
- * 用法示例：
- * ```vue
- * <BaseSearch @search="handleSearch" @reset="handleReset">
- *   <el-form-item label="用户名">
- *     <el-input v-model="params.name" placeholder="请输入" />
- *   </el-form-item>
- *   <el-form-item label="状态">
- *     <el-select v-model="params.status">
- *       <el-option label="启用" value="1" />
- *       <el-option label="禁用" value="0" />
- *     </el-select>
- *   </el-form-item>
- * </BaseSearch>
- * ```
+ * 使用场景：列表页基础查询、多条件筛选、移动端搜索区
+ * AI 规则：列表页搜索区域优先使用本组件并配合 useSearch，禁止重复编写查询按钮和折叠状态
+ * Props：loading、collapsible、defaultExpanded
+ * Emits：search、reset、update:expanded
+ * Slots：default
  */
 interface Props {
   loading?: boolean
-  /** 是否允许折叠（超出一行时显示展开/收起） */
   collapsible?: boolean
+  defaultExpanded?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   loading: false,
   collapsible: true,
+  defaultExpanded: false,
 })
 
 const emit = defineEmits<{
   search: []
   reset: []
+  'update:expanded': [value: boolean]
 }>()
+
+const fieldsRef = ref<HTMLDivElement>()
+const fieldCount = ref(0)
+const expanded = ref(props.defaultExpanded)
+const showToggle = computed(() => props.collapsible && fieldCount.value > 3)
+
+function updateFieldCount() {
+  fieldCount.value = fieldsRef.value?.querySelectorAll('.el-form-item').length ?? 0
+  if (!showToggle.value) expanded.value = true
+}
+
+function toggleExpanded() {
+  expanded.value = !expanded.value
+  emit('update:expanded', expanded.value)
+}
+
+onMounted(updateFieldCount)
+onUpdated(updateFieldCount)
 </script>
 
 <template>
   <el-card class="base-search" shadow="never">
-    <el-form inline class="base-search__form">
-      <slot />
+    <el-form inline class="base-search__form" @submit.prevent="emit('search')">
+      <div
+        ref="fieldsRef"
+        class="base-search__fields"
+        :class="{ 'is-collapsed': showToggle && !expanded }"
+      >
+        <slot />
+      </div>
       <el-form-item class="base-search__actions">
-        <el-button type="primary" :loading="loading" @click="emit('search')">
-          <el-icon><Search /></el-icon>搜索
-        </el-button>
-        <el-button @click="emit('reset')">
-          <el-icon><Refresh /></el-icon>重置
+        <el-button type="primary" native-type="submit" :loading="loading">搜索</el-button>
+        <el-button :disabled="loading" @click="emit('reset')">重置</el-button>
+        <el-button v-if="showToggle" link type="primary" @click="toggleExpanded">
+          {{ expanded ? '收起' : '展开' }}
         </el-button>
       </el-form-item>
     </el-form>
@@ -63,14 +72,31 @@ const emit = defineEmits<{
 .base-search {
   margin-bottom: 12px;
 }
-.base-search .el-card__body {
+.base-search :deep(.el-card__body) {
   padding: 16px 16px 0;
 }
 .base-search__form {
+  display: flex;
   flex-wrap: wrap;
   gap: 4px 0;
 }
+.base-search__fields {
+  display: contents;
+}
+.base-search__fields.is-collapsed :deep(.el-form-item:nth-child(n + 4)) {
+  display: none;
+}
 .base-search__actions {
   margin-left: auto;
+}
+@media (max-width: 640px) {
+  .base-search__form,
+  .base-search__fields :deep(.el-form-item),
+  .base-search__fields :deep(.el-form-item__content) {
+    width: 100%;
+  }
+  .base-search__actions {
+    margin-left: 0;
+  }
 }
 </style>

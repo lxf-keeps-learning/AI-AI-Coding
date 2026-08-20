@@ -1,47 +1,57 @@
-import { onUnmounted, reactive, toRaw } from 'vue'
+import { onUnmounted, reactive, toRaw, type UnwrapNestedRefs } from 'vue'
+import { debounce, type DebouncedFunction } from '../utils/debounce'
+
+export interface UseSearchReturn<T extends Record<string, unknown>> {
+  params: UnwrapNestedRefs<T>
+  search: DebouncedFunction<[], void>
+  searchImmediately: () => void
+  reset: () => void
+  getParams: () => T
+}
 
 /**
- * useSearch —— 搜索表单通用状态管理
+ * useSearch —— 管理搜索参数、防抖提交和重置
  *
  * 功能：
- * - 搜索参数响应式维护
- * - reset 一键还原初始值
- * - 防抖搜索（默认 300ms）
- * - 与 useTable 协同：search 触发 fetchList
+ * - 从初始值创建响应式查询模型
+ * - search 防抖触发，searchImmediately 立即触发
+ * - 向回调传递普通对象快照，避免响应式对象后续变化
+ * - 组件卸载时取消待执行任务
  *
  * AI 规则：
- * 所有搜索条件管理优先使用本 hook，禁止在页面组件内裸声明多个 ref
+ * 列表查询参数优先使用本 hook，禁止页面用多个独立 ref 重复管理
+ * 与 BaseSearch / useTable 配套使用
  *
  * 用法示例：
  * ```ts
- * const { params, search, reset } = useSearch({ name: '', status: '' }, fetchList)
+ * const search = useSearch({ name: '', status: undefined }, table.handleSearch)
  * ```
  */
 export function useSearch<T extends Record<string, unknown>>(
   initialParams: T,
   onSearch?: (params: T) => void,
   debounceMs = 300
-) {
-  const params = reactive<T>({ ...initialParams }) as T
+): UseSearchReturn<T> {
+  const initialSnapshot = { ...initialParams }
+  const params = reactive({ ...initialSnapshot }) as UnwrapNestedRefs<T>
 
-  let timer: ReturnType<typeof setTimeout> | null = null
-
-  function search() {
-    if (timer) clearTimeout(timer)
-    timer = setTimeout(() => {
-      timer = null
-      onSearch?.({ ...toRaw(params) } as T)
-    }, debounceMs)
+  function getParams(): T {
+    return { ...(toRaw(params) as T) }
   }
+
+  function searchImmediately() {
+    onSearch?.(getParams())
+  }
+
+  const search = debounce(searchImmediately, debounceMs)
 
   function reset() {
-    Object.assign(params, initialParams)
-    onSearch?.({ ...toRaw(params) } as T)
+    search.cancel()
+    Object.assign(params, initialSnapshot)
+    searchImmediately()
   }
 
-  onUnmounted(() => {
-    if (timer) clearTimeout(timer)
-  })
+  onUnmounted(search.cancel)
 
-  return { params, search, reset }
+  return { params, search, searchImmediately, reset, getParams }
 }

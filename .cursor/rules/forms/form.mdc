@@ -34,7 +34,7 @@ interface UserForm {
 
 const props = defineProps<{ model: UserForm; loading?: boolean }>()
 
-const formRef = ref()
+const formRef = ref<InstanceType<typeof BaseForm>>()
 
 const rules: FormRules<UserForm> = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
@@ -80,3 +80,5 @@ defineExpose({ validate, reset })
 - 通过 defineExpose({ validate, reset }) 暴露给父组件
 - 禁止在表单内写提交逻辑
 - loading 时禁用所有字段（BaseForm 内置 :disabled="loading"）
+- 双列布局显式传 `columns="2"`，宽度小于 768px 时自动单列
+- `validate()` 在组件未挂载时返回 false；需要清理单字段错误时使用 `clearValidate`

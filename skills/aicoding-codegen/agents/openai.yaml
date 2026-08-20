@@ -1,0 +1,4 @@
+interface:
+  display_name: "AICoding 智能代码生成"
+  short_description: "检索 AICoding Prompt 和 ai-kit 后生成业务代码"
+  default_prompt: "使用 $aicoding-codegen 生成一个符合项目规范的折线图组件。"

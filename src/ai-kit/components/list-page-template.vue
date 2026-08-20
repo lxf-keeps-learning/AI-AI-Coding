@@ -32,6 +32,11 @@ interface XxxRecord {
   createTime: string
 }
 
+interface XxxQuery extends Record<string, unknown> {
+  name: string
+  status: string | number
+}
+
 // ---- 模拟 API（替换为真实 service）----
 async function getXxxList(_p: unknown) {
   return { list: [] as XxxRecord[], total: 0 }
@@ -39,36 +44,33 @@ async function getXxxList(_p: unknown) {
 async function deleteXxx(_id: number) {}
 
 // ---- Hooks ----
-const { tableData, loading, pagination, fetchList, handleSearch, handleReset, handleSelectionChange } =
-  useTable<XxxRecord>((p) => getXxxList(p))
+const { tableData, loading, error, pagination, fetchList, handleSearch, handlePageChange, handleSizeChange,
+  handleSelectionChange } = useTable<XxxRecord, XxxQuery>((p) => getXxxList(p))
 
-const { params, search, reset } = useSearch(
-  { name: '', status: '' as string | number },
-  (p) => handleSearch(p as Record<string, unknown>)
-)
+const { params, searchImmediately, reset } = useSearch<XxxQuery>({ name: '', status: '' }, handleSearch)
 
 const dialog = useDialog<XxxRecord | null>()
 
 // ---- 操作 ----
 function handleAdd() {
-  dialog.open(null)
+  void dialog.open(null)
 }
 
 function handleEdit(row: XxxRecord) {
-  dialog.open(row)
+  void dialog.open(row)
 }
 
 async function handleDelete(row: XxxRecord) {
   await ElMessageBox.confirm(`确认删除「${row.name}」？`, '提示', { type: 'warning' })
   await deleteXxx(row.id)
   ElMessage.success('删除成功')
-  fetchList()
+  await fetchList()
 }
 
 async function handleDialogConfirm() {
   // 通常在此调用 formRef.validate() → 提交 API → dialog.confirm()
   dialog.confirm()
-  fetchList()
+  await fetchList()
 }
 
 onMounted(() => fetchList())
@@ -77,7 +79,7 @@ onMounted(() => fetchList())
 <template>
   <div class="page-container">
     <!-- 搜索区 -->
-    <BaseSearch @search="search" @reset="reset">
+    <BaseSearch @search="searchImmediately" @reset="reset">
       <el-form-item label="名称">
         <el-input v-model="params.name" placeholder="请输入名称" clearable />
       </el-form-item>
@@ -95,6 +97,9 @@ onMounted(() => fetchList())
     </div>
 
     <!-- 表格 -->
+    <el-alert v-if="error" title="列表加载失败" type="error" show-icon :closable="false">
+      <template #default><el-button link type="primary" @click="fetchList()">重试</el-button></template>
+    </el-alert>
     <el-table v-loading="loading" :data="tableData" row-key="id" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" />
       <el-table-column prop="name" label="名称" min-width="120" show-overflow-tooltip />
@@ -122,8 +127,8 @@ onMounted(() => fetchList())
       :page-sizes="[10, 20, 50, 100]"
       layout="total, sizes, prev, pager, next"
       class="page-pagination"
-      @current-change="(p: number) => { pagination.page = p; fetchList() }"
-      @size-change="(s: number) => { pagination.pageSize = s; pagination.page = 1; fetchList() }"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
     />
 
     <!-- 弹窗 -->

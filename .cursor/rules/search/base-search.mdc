@@ -1,17 +1,12 @@
 ---
-description: 基础查询：关键字、简单筛选与请求合并
+description: BaseSearch：查询、重置、前三项折叠和响应式布局
 alwaysApply: false
 ---
 
-## 生成搜索区域时：
+## BaseSearch
 
-要求：
-- 展开收起
-- reset/search
-- 响应式布局
-- slot 扩展
-- 与 table 联动
-- 参数自动格式化
-
-优先使用：
-- BaseSearch
+- 列表页搜索区域优先使用 `src/ai-kit/search/BaseSearch.vue`。
+- 与 useSearch 配套：`@search="searchImmediately"`、`@reset="reset"`。
+- 字段超过 3 个且 `collapsible=true` 时显示展开/收起；移动端字段占满一行。
+- 按 Enter 触发搜索，loading 时禁用重置和重复提交。
+- 高级 AND/OR 条件、条件摘要和 URL 同步不属于 BaseSearch 基础契约，按业务扩展。

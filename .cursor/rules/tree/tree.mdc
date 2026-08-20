@@ -26,7 +26,8 @@ import { onMounted } from 'vue'
 
 interface DeptNode { id: number; label: string; children?: DeptNode[] }
 
-const { treeData, loading, filterText, checkedKeys, fetchTree } = useTree<DeptNode>(getDeptTree)
+const { treeData, loading, error, filterText, checkedKeys, expandedKeys, fetchTree } =
+  useTree<DeptNode>(getDeptTree)
 
 function onNodeClick(node: DeptNode) {
   // 点击节点触发右侧列表联动
@@ -43,12 +44,15 @@ onMounted(() => fetchTree())
     <BaseTree
       :data="treeData"
       :loading="loading"
-      :filter-text="filterText"
-      :show-checkbox="true"
-      v-model:checked-keys="checkedKeys"
+    :filter-text="filterText"
+    :error="error"
+    :show-checkbox="true"
+    v-model:checked-keys="checkedKeys"
+    v-model:expanded-keys="expandedKeys"
       node-key="id"
       label="label"
-      @node-click="onNodeClick"
+    @node-click="onNodeClick"
+    @retry="fetchTree"
     />
   </div>
 </template>
@@ -71,3 +75,5 @@ onMounted(() => fetchTree())
 - 搜索框在组件外部，filterText 传入触发过滤
 - checkbox 勾选结果通过 v-model:checked-keys 双向绑定
 - loading 状态必须展示（骨架或遮罩）
+- 远程树必须传入 error 并绑定 retry；静态树可以只使用 BaseTree
+- checkedKeys 会响应外部回填；expandedKeys 通过展开/收起事件同步到 useTree

@@ -1,59 +1,68 @@
-import { ref, shallowRef } from 'vue'
+import { ref, shallowRef, type Ref, type ShallowRef } from 'vue'
+
+export interface UseDialogReturn<T> {
+  visible: Ref<boolean>
+  payload: ShallowRef<T | null>
+  loading: Ref<boolean>
+  open: (record?: T) => Promise<boolean>
+  close: () => void
+  confirm: () => void
+  setLoading: (value: boolean) => void
+}
 
 /**
- * useDialog —— 弹窗 / 抽屉通用状态管理
+ * useDialog —— 管理弹窗或抽屉的显示、载荷和确认结果
  *
  * 功能：
- * - visible 单一来源控制
- * - 携带泛型 payload（record、id 等）
- * - Promise 化：open 返回 Promise，confirm/cancel 决议
- * - 自动清理：close 后重置 payload
+ * - visible / payload / loading 单一来源
+ * - open 返回 Promise<boolean>，confirm / close 完成决议
+ * - 重复 open 时先以 false 结束上一次调用，避免悬空 Promise
  *
  * AI 规则：
- * 所有 Dialog / Drawer 开关逻辑优先使用本 hook，禁止父子双控 visible
+ * 所有 Dialog / Drawer 状态优先使用本 hook，禁止父子双控 visible
+ * 与 BaseDialog / BaseDrawer 配套使用
  *
  * 用法示例：
  * ```ts
- * const { visible, payload, open, close, confirm } = useDialog<UserRecord>()
- *
- * // 打开并等待确认结果
- * const ok = await open(row)
- * if (ok) fetchList()
+ * const dialog = useDialog<UserRecord>()
+ * const confirmed = await dialog.open(row)
  * ```
  */
-export function useDialog<T = unknown>() {
+export function useDialog<T = unknown>(): UseDialogReturn<T> {
   const visible = ref(false)
   const payload = shallowRef<T | null>(null)
   const loading = ref(false)
+  let resolvePending: ((confirmed: boolean) => void) | null = null
 
-  let _resolve: ((ok: boolean) => void) | null = null
+  function settle(confirmed: boolean) {
+    resolvePending?.(confirmed)
+    resolvePending = null
+    visible.value = false
+    payload.value = null
+    loading.value = false
+  }
 
-  /** 打开弹窗，返回 Promise<boolean>（true=确认, false=取消） */
   function open(record?: T): Promise<boolean> {
+    resolvePending?.(false)
     payload.value = record ?? null
+    loading.value = false
     visible.value = true
     return new Promise((resolve) => {
-      _resolve = resolve
+      resolvePending = resolve
     })
   }
 
-  /** 确认关闭，决议 true */
   function confirm() {
-    visible.value = false
-    _resolve?.(true)
-    _resolve = null
-    payload.value = null
-    loading.value = false
+    settle(true)
   }
 
-  /** 取消 / ESC 关闭，决议 false */
   function close() {
-    visible.value = false
-    _resolve?.(false)
-    _resolve = null
-    payload.value = null
-    loading.value = false
+    settle(false)
   }
 
-  return { visible, payload, loading, open, close, confirm }
+  function setLoading(value: boolean) {
+    loading.value = value
+  }
+
+  return { visible, payload, loading, open, close, confirm, setLoading }
 }

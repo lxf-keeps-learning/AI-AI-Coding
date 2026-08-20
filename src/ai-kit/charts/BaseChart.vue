@@ -1,94 +1,93 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { useChart } from '../hooks/useChart'
 
 /**
- * BaseChart —— 通用 ECharts 图表组件
+ * BaseChart —— 提供 loading、empty、error 和生命周期管理的 ECharts 容器
  *
- * 功能：
- * - 自动 init / dispose / resize（ResizeObserver）
- * - loading 占位
- * - 空数据状态
- * - 通过 :option 传入配置，组件内节流 setOption
- * - 支持 dark mode（theme prop）
- *
- * AI 规则：
- * 所有 ECharts 图表封装必须基于本组件，通过 :option 传入配置
- * 禁止在业务组件内直接 echarts.init
- *
- * 用法示例：
- * ```vue
- * <BaseChart :option="chartOption" :loading="loading" height="300px" />
- * ```
+ * 使用场景：折线图、柱状图、饼图和大多数配置驱动图表
+ * AI 规则：简单 ECharts 图表必须使用本组件，禁止业务组件直接 echarts.init；复杂实例交互使用 useChart
+ * Props：option、loading、empty、error、height、width、theme、updateDelay
+ * Emits：retry
+ * Slots：empty、error
  */
 interface Props {
   option?: EChartsOption
   loading?: boolean
+  empty?: boolean
+  error?: unknown
   height?: string
   width?: string
   theme?: 'light' | 'dark' | ''
-  /** option 为空时是否显示空状态 */
   showEmpty?: boolean
+  updateDelay?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   option: undefined,
   loading: false,
+  empty: false,
   height: '300px',
   width: '100%',
   theme: '',
   showEmpty: true,
+  updateDelay: 0,
 })
 
+const emit = defineEmits<{ retry: [] }>()
 const chartEl = ref<HTMLDivElement>()
-const { setOption, showLoading, hideLoading } = useChart(chartEl, props.theme as 'light' | 'dark' | '')
+const themeRef = computed(() => props.theme)
+const { setOption, showLoading, hideLoading } = useChart(chartEl, themeRef)
+const isEmpty = computed(() => props.showEmpty && !props.loading && !props.error && (props.empty || !props.option))
 
-// 监听 option 变化，节流 200ms 避免重绘
 watch(
   () => props.option,
-  (val) => {
-    if (val) setOption(val, 200)
+  (option) => {
+    if (option) setOption(option, props.updateDelay)
   },
-  { deep: true }
-)
-
-// 监听 loading
-watch(
-  () => props.loading,
-  (val) => (val ? showLoading() : hideLoading()),
   { immediate: true }
 )
 
-onMounted(() => {
-  if (props.option) setOption(props.option)
-})
+watch(
+  () => props.loading,
+  (loading) => (loading ? showLoading() : hideLoading()),
+  { immediate: true }
+)
 </script>
 
 <template>
   <div class="base-chart" :style="{ height, width }">
     <div ref="chartEl" class="base-chart__canvas" :style="{ height, width }" />
-    <el-empty
-      v-if="showEmpty && !loading && !option"
-      class="base-chart__empty"
-      description="暂无数据"
-      :image-size="60"
-    />
+
+    <div v-if="error" class="base-chart__state">
+      <slot name="error" :error="error" :retry="() => emit('retry')">
+        <el-result icon="error" title="图表加载失败">
+          <template #extra><el-button type="primary" @click="emit('retry')">重试</el-button></template>
+        </el-result>
+      </slot>
+    </div>
+
+    <div v-else-if="isEmpty" class="base-chart__state">
+      <slot name="empty"><el-empty description="暂无数据" :image-size="60" /></slot>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .base-chart {
   position: relative;
+  min-height: 120px;
 }
 .base-chart__canvas {
   display: block;
 }
-.base-chart__empty {
+.base-chart__state {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--el-bg-color, #fff);
 }
 </style>
