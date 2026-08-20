@@ -13,6 +13,7 @@
 ## Global Constraints
 
 - Preserve the existing `searchPrompts(query, options)` API and every field currently returned in `matches`.
+- Treat `prompts/asset-contracts.json` as the authoritative Prompt-to-Rules/ai-kit mapping; keep directory inference only as a warned compatibility fallback.
 - Do not add Embeddings, vector storage, AST parsers, file watchers, persistent caches, or external network calls.
 - Scan only the explicit AICoding roots and optional `project` root; never scan outside them.
 - Default limits are 5,000 files, 512 KiB per file, five Prompt matches, and ten Context matches.
@@ -27,12 +28,15 @@
 
 | File | Responsibility |
 | --- | --- |
+| `prompts/asset-contracts.json` | Versioned, authoritative Prompt-to-Rules/ai-kit mappings |
+| `scripts/prompt-contracts.js` | Load, validate, and audit asset contracts |
 | `scripts/codebase-scanner.js` | Validate roots, discover safe text files, apply fixed and `.gitignore` exclusions, enforce limits, report warnings |
 | `scripts/codebase-chunker.js` | Convert supported files into normalized Markdown/MDC, Vue, TS, and JS chunks |
 | `scripts/hybrid-ranker.js` | Score chunks with explainable lexical/reference signals, deduplicate, and limit results |
 | `scripts/search-prompts.js` | Preserve Prompt search, orchestrate Context search, parse CLI flags, render text/JSON output |
 | `scripts/install-integration.js` | Generate installed instructions that pass `--project .` and consume `contexts` |
 | `tests/codebase-scanner.test.js` | Scanner safety, ignore, limit, and error tests |
+| `tests/prompt-contracts.test.js` | Contract schema, path, coverage, drift, and fallback tests |
 | `tests/codebase-chunker.test.js` | Chunk shape, symbol, line range, and fallback tests |
 | `tests/hybrid-ranker.test.js` | Score ordering, reasons, reference boost, deduplication tests |
 | `tests/search-prompts.test.js` | Public API and AICoding/business Context integration tests |
@@ -45,7 +49,132 @@
 
 ---
 
-### Task 1: Safe Codebase Scanner
+### Task 1: Prompt Asset Contract
+
+**Files:**
+- Create: `prompts/asset-contracts.json`
+- Create: `scripts/prompt-contracts.js`
+- Create: `tests/prompt-contracts.test.js`
+- Modify: `scripts/search-prompts.js`
+- Modify: `tests/search-prompts.test.js`
+
+**Interfaces:**
+- Produces: `loadPromptContracts(root) -> Map<string, { rules, references, noReferenceReason? }>`
+- Produces: `validatePromptContracts(root) -> { errors, warnings, coverage }`
+- Coverage shape: `{ promptCount, contractedPromptCount, mappedRules, unmappedRules, mappedReferences, unmappedReferences }`
+- Search fallback warning: `{ code: "CONTRACT_FALLBACK", path, message }`
+
+- [ ] **Step 1: Write failing tests for the repository contract**
+
+Create `tests/prompt-contracts.test.js`. Assert `validatePromptContracts(root).errors` is empty, `promptCount === 22`, `contractedPromptCount === 22`, every loaded entry has a non-empty `rules` array, and an empty `references` array always has a non-empty `noReferenceReason`.
+
+```js
+const report = validatePromptContracts(root);
+assert.deepEqual(report.errors, []);
+assert.equal(report.coverage.promptCount, 22);
+assert.equal(report.coverage.contractedPromptCount, 22);
+for (const contract of loadPromptContracts(root).values()) {
+  assert.ok(contract.rules.length > 0);
+  if (contract.references.length === 0) assert.ok(contract.noReferenceReason?.trim());
+}
+```
+
+- [ ] **Step 2: Run the contract test and verify RED**
+
+Run: `node --test tests/prompt-contracts.test.js`
+
+Expected: FAIL with `Cannot find module '../scripts/prompt-contracts.js'`.
+
+- [ ] **Step 3: Create the complete version-1 contract**
+
+Create `prompts/asset-contracts.json` with one entry for each of the 22 non-README Prompt files. Use these exact mapping decisions; prepend `.cursor/rules/` to Rule values and `src/ai-kit/` to reference values:
+
+| Prompt | Rules | References |
+| --- | --- | --- |
+| `charts/bar-chart.md` | `charts/chart.mdc`, `charts/bar-chart.mdc` | `charts/BaseChart.vue`, `hooks/useChart.ts`, `hooks/useRequest.ts` |
+| `charts/bigscreen-chart.md` | `charts/chart.mdc`, `charts/bigscreen-chart.mdc` | `charts/BaseChart.vue`, `hooks/useChart.ts`, `hooks/useRequest.ts` |
+| `charts/chart.md` | `charts/chart.mdc` | `charts/BaseChart.vue`, `hooks/useChart.ts`, `hooks/useRequest.ts` |
+| `charts/gauge-chart.md` | `charts/chart.mdc` | `charts/BaseChart.vue`, `hooks/useChart.ts`, `hooks/useRequest.ts` |
+| `charts/line-chart.md` | `charts/chart.mdc`, `charts/line-chart.mdc` | `charts/BaseChart.vue`, `hooks/useChart.ts`, `hooks/useRequest.ts` |
+| `charts/pie-chart.md` | `charts/chart.mdc`, `charts/pie-chart.mdc` | `charts/BaseChart.vue`, `hooks/useChart.ts`, `hooks/useRequest.ts` |
+| `charts/radar-chart.md` | `charts/chart.mdc` | `charts/BaseChart.vue`, `hooks/useChart.ts`, `hooks/useRequest.ts` |
+| `charts/scatter-chart.md` | `charts/chart.mdc` | `charts/BaseChart.vue`, `hooks/useChart.ts`, `hooks/useRequest.ts` |
+| `components/dialog.md` | `components/component.mdc`, `components/dialog.mdc` | `components/BaseDialog.vue`, `forms/BaseForm.vue`, `hooks/useDialog.ts` |
+| `components/drawer.md` | `components/component.mdc`, `components/drawer.mdc` | `components/BaseDrawer.vue`, `forms/BaseForm.vue`, `hooks/useDialog.ts`, `tree/BaseTree.vue`, `hooks/useTree.ts` |
+| `forms/dynamic-form.md` | `forms/form.mdc`, `forms/dynamic-form.mdc` | `forms/BaseForm.vue`, `hooks/useRequest.ts` |
+| `forms/form.md` | `forms/form.mdc` | `forms/BaseForm.vue`, `components/BaseDialog.vue`, `hooks/useDialog.ts`, `search/BaseSearch.vue`, `hooks/useSearch.ts`, `hooks/useTable.ts`, `components/BaseDrawer.vue` |
+| `git/commit.md` | `global/git.mdc` | empty; reason `Git 提交工作流没有对应的 ai-kit 运行时资产` |
+| `hooks/use-request.md` | `hooks/use-request.mdc` | `hooks/useRequest.ts` |
+| `pages/list-page.md` | `global/architecture.mdc`, `pages/list-page.mdc` | `components/list-page-template.vue`, `hooks/useTable.ts`, `hooks/useSearch.ts`, `hooks/useDialog.ts`, `search/BaseSearch.vue` |
+| `performance/large-data.md` | `performance/render.mdc`, `performance/large-data.mdc` | empty; reason `大数据性能 Prompt 是诊断指导，不绑定单一 ai-kit 实现` |
+| `refactor/component.md` | `refactor/component-refactor.mdc` | empty; reason `组件重构 Prompt 面向业务代码，没有单一 ai-kit 依赖` |
+| `review/review.md` | `review/code-review.mdc` | empty; reason `代码审查 Prompt 是规则工作流，没有运行时 ai-kit 依赖` |
+| `search/base-search.md` | `search/base-search.mdc` | `search/BaseSearch.vue`, `hooks/useSearch.ts` |
+| `table/crud-table.md` | `hooks/use-table.mdc`, `table/crud-table.mdc` | `hooks/useTable.ts` |
+| `tree/lazy-tree.md` | `tree/tree.mdc`, `tree/lazy-tree.mdc` | `tree/BaseTree.vue`, `hooks/useTree.ts` |
+| `tree/tree.md` | `tree/tree.mdc` | `tree/BaseTree.vue`, `hooks/useTree.ts`, `components/list-page-template.vue`, `hooks/useTable.ts` |
+
+Every JSON key begins with `prompts/`. Add no global `base.mdc` or `typescript.mdc` entries because search injects them uniformly.
+
+- [ ] **Step 4: Implement contract loading and validation**
+
+In `scripts/prompt-contracts.js`, walk non-README Markdown files under `prompts/`, Rules under `.cursor/rules/`, and `.vue`/`.ts` files under `src/ai-kit/`. Parse JSON with an error that names `prompts/asset-contracts.json`. Validate version `1`, exact Prompt coverage, non-empty unique Rules, unique References, required/forbidden `noReferenceReason`, path prefixes, root containment, existence, and Prompt-body ai-kit references missing from the contract. Return stable error objects `{ code, path, message }` using these codes:
+
+```js
+const ERROR_CODES = [
+  "INVALID_CONTRACT",
+  "MISSING_PROMPT_CONTRACT",
+  "ORPHAN_PROMPT_CONTRACT",
+  "INVALID_RULES",
+  "INVALID_REFERENCES",
+  "MISSING_ASSET",
+  "PATH_ESCAPE",
+  "REFERENCE_DRIFT",
+];
+```
+
+Report unmapped Rules and ai-kit as warning/coverage arrays, not errors. When executed directly with `--check`, print each error and exit `1`; otherwise print contract and coverage counts and exit `0`.
+
+- [ ] **Step 5: Run repository contract tests and verify GREEN**
+
+Run: `node --test tests/prompt-contracts.test.js`
+
+Expected: PASS.
+
+- [ ] **Step 6: Write failing fixture tests for each validation error**
+
+Build minimal temporary roots by copying a one-Prompt/one-Rule/one-ai-kit fixture. Mutate the contract separately to assert stable errors for a missing Prompt entry, orphan entry, duplicate Rule, missing asset, `../` path escape, empty References without a reason, reason with non-empty References, and a Prompt-body reference absent from the contract. Assert unmapped assets appear in `coverage` while `errors` remains empty.
+
+- [ ] **Step 7: Run fixture tests and verify RED, then complete validation branches**
+
+Run: `node --test tests/prompt-contracts.test.js`
+
+Expected before completing branches: FAIL on the first unimplemented error case. Add only the missing validation branches, rerun, and expect PASS.
+
+- [ ] **Step 8: Write a failing search integration test for contract authority and fallback**
+
+In `tests/search-prompts.test.js`, assert line-chart search returns the contract's three ai-kit References and chart Rules. In a temporary legacy root with a Prompt but no `asset-contracts.json`, assert existing directory inference still returns Rules and `warnings` contains `CONTRACT_FALLBACK`.
+
+- [ ] **Step 9: Make the contract authoritative in search and preserve fallback**
+
+Load the contract once per `searchPrompts()` call. For each Prompt, set `references` and domain/scenario `rules` from its entry, then inject `.cursor/rules/global/base.mdc` and `.cursor/rules/global/typescript.mdc`. If the file or entry is missing, run the existing `findRules()` and body-reference extraction and append one deduplicated `CONTRACT_FALLBACK` warning for that Prompt.
+
+- [ ] **Step 10: Run contract and search tests**
+
+Run: `node --test tests/prompt-contracts.test.js tests/search-prompts.test.js`
+
+Expected: PASS.
+
+- [ ] **Step 11: Commit the asset contract**
+
+```bash
+git add prompts/asset-contracts.json scripts/prompt-contracts.js tests/prompt-contracts.test.js scripts/search-prompts.js tests/search-prompts.test.js
+git commit -m "feat: add prompt asset contracts"
+```
+
+---
+
+### Task 2: Safe Codebase Scanner
 
 **Files:**
 - Create: `scripts/codebase-scanner.js`
@@ -147,14 +276,14 @@ git commit -m "feat: add safe codebase scanner"
 
 ---
 
-### Task 2: Structure-Aware Chunker
+### Task 3: Structure-Aware Chunker
 
 **Files:**
 - Create: `scripts/codebase-chunker.js`
 - Create: `tests/codebase-chunker.test.js`
 
 **Interfaces:**
-- Consumes scanner file records from Task 1.
+- Consumes scanner file records from Task 2.
 - Produces: `chunkFile(file) -> Chunk[]`
 - Produces: `chunkFiles(files) -> { chunks, warnings }`
 - Chunk shape: `{ source, type, path, title, symbol, kind, content, startLine, endLine }`
@@ -222,7 +351,7 @@ git commit -m "feat: add structure-aware code chunks"
 
 ---
 
-### Task 3: Explainable Hybrid Ranker
+### Task 4: Explainable Hybrid Ranker
 
 **Files:**
 - Create: `scripts/hybrid-ranker.js`
@@ -296,14 +425,14 @@ git commit -m "feat: add explainable hybrid ranking"
 
 ---
 
-### Task 4: Integrate Context Search into the Public API
+### Task 5: Integrate Context Search into the Public API
 
 **Files:**
 - Modify: `scripts/search-prompts.js`
 - Modify: `tests/search-prompts.test.js`
 
 **Interfaces:**
-- Consumes `scanCodebase`, `chunkFiles`, and `rankContexts` from Tasks 1–3.
+- Consumes the authoritative contract from Task 1 plus `scanCodebase`, `chunkFiles`, and `rankContexts` from Tasks 2–4.
 - Extends `searchPrompts()` options with `project`, `contextLimit`, `maxFiles`, and `maxFileBytes`.
 - Extends the return value with `project`, `contexts`, and `warnings` while preserving every existing field.
 
@@ -362,7 +491,7 @@ git commit -m "feat: return hybrid codebase contexts"
 
 ---
 
-### Task 5: CLI and Installed Workflow Integration
+### Task 6: CLI and Installed Workflow Integration
 
 **Files:**
 - Modify: `scripts/search-prompts.js`
@@ -439,7 +568,7 @@ git commit -m "feat: connect hybrid search to codegen workflow"
 
 ---
 
-### Task 6: Package, Document, and Verify the Feature
+### Task 7: Package, Document, and Verify the Feature
 
 **Files:**
 - Modify: `package.json`
@@ -456,6 +585,7 @@ Extend `tests/install-integration.test.js` or add a focused assertion that every
 
 ```js
 [
+  "scripts/prompt-contracts.js",
   "scripts/codebase-scanner.js",
   "scripts/codebase-chunker.js",
   "scripts/hybrid-ranker.js",
@@ -466,29 +596,29 @@ Extend `tests/install-integration.test.js` or add a focused assertion that every
 
 Run: `node --test tests/install-integration.test.js`
 
-Expected: FAIL because the three scripts are absent from the publish allowlist.
+Expected: FAIL because the four scripts are absent from the publish allowlist.
 
 - [ ] **Step 3: Update package files and validation commands**
 
-Add all three modules to `package.json#files`. Add `node --check` for each module to the existing `check` command immediately after `scripts/search-prompts.js`, without changing the remaining validation sequence.
+Add all four modules to `package.json#files`. Add a `check:prompt-contracts` script that runs `node scripts/prompt-contracts.js --check`. Add `node --check` for each module and `npm run check:prompt-contracts` to the existing `check` sequence before `check:prompts`, without changing the remaining validation order.
 
 - [ ] **Step 4: Run the package assertion and syntax checks**
 
 Run: `node --test tests/install-integration.test.js`
 
-Run: `node --check scripts/codebase-scanner.js && node --check scripts/codebase-chunker.js && node --check scripts/hybrid-ranker.js && node --check scripts/search-prompts.js`
+Run: `node --check scripts/prompt-contracts.js && node --check scripts/codebase-scanner.js && node --check scripts/codebase-chunker.js && node --check scripts/hybrid-ranker.js && node --check scripts/search-prompts.js && npm run check:prompt-contracts`
 
 Expected: all commands PASS.
 
 - [ ] **Step 5: Update user documentation**
 
-In `README.md`, describe the coding chain as `Prompt + Codebase 混合检索`, add `npx aicoding search "用户 CRUD 列表" --project .`, and state that the first version is deterministic, offline, and does not upload source code.
+In `README.md`, describe the coding chain as `Prompt 契约 + Codebase 混合检索`, add `npx aicoding search "用户 CRUD 列表" --project .`, document `prompts/asset-contracts.json` and `npm run check:prompt-contracts`, and state that the first version is deterministic, offline, and does not upload source code.
 
-In `docs/实际项目接入指南.md`, update the execution flow so search receives `--project .`, explain the `matches`/`contexts` split, list supported extensions and fixed exclusions, document the 5,000-file/512-KiB defaults, and clarify that Embeddings are a future optional provider rather than a current requirement.
+In `docs/实际项目接入指南.md`, update the execution flow so search receives `--project .`, explain that `matches.rules` and `matches.references` come from the validated asset contract, explain the `matches`/`contexts` split, list supported extensions and fixed exclusions, document the 5,000-file/512-KiB defaults, and clarify that Embeddings are a future optional provider rather than a current requirement.
 
 - [ ] **Step 6: Run focused Node tests**
 
-Run: `node --test tests/codebase-scanner.test.js tests/codebase-chunker.test.js tests/hybrid-ranker.test.js tests/search-prompts.test.js tests/search-prompts-cli.test.js tests/install-integration.test.js`
+Run: `node --test tests/prompt-contracts.test.js tests/codebase-scanner.test.js tests/codebase-chunker.test.js tests/hybrid-ranker.test.js tests/search-prompts.test.js tests/search-prompts-cli.test.js tests/install-integration.test.js`
 
 Expected: PASS with no warnings or skipped tests.
 
@@ -502,7 +632,7 @@ Expected: exit status `0`; Prompt catalog check, ai-kit contracts, TypeScript ch
 
 Run: `npm pack --dry-run`
 
-Expected: output includes `scripts/codebase-scanner.js`, `scripts/codebase-chunker.js`, `scripts/hybrid-ranker.js`, and `scripts/search-prompts.js`.
+Expected: output includes `prompts/asset-contracts.json`, `scripts/prompt-contracts.js`, `scripts/codebase-scanner.js`, `scripts/codebase-chunker.js`, `scripts/hybrid-ranker.js`, and `scripts/search-prompts.js`.
 
 Run: `git diff --check`
 
@@ -522,6 +652,7 @@ git commit -m "docs: publish and explain hybrid codebase search"
 Before claiming completion, use `superpowers:verification-before-completion` and confirm from fresh output that:
 
 - Every new production behavior was preceded by an observed failing test.
+- Every non-README Prompt has a valid contract, and contract paths/body references cannot drift silently.
 - Existing Prompt ranking and `matches` fields did not regress.
 - Business scanning occurs only when `project` is explicitly supplied.
 - Sensitive files and fixed excluded directories are never read or returned.

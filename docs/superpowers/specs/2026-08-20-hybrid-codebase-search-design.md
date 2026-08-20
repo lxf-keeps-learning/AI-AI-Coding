@@ -9,12 +9,13 @@ AICoding 当前通过 `scripts/search-prompts.js` 对 `prompts/` 进行关键词
 ## 目标
 
 1. 保留现有 Prompt 检索、规则关联和 `matches` 返回结构。
-2. 检索 AICoding 的 Rules、ai-kit、Skills、设计文档和工程文档。
-3. 通过可选 `--project` 参数检索真实业务项目代码和 Markdown 文档。
-4. 对 Markdown、Vue、TypeScript 和 JavaScript 做轻量结构化分块。
-5. 使用可解释的确定性混合评分融合标题、符号、路径、正文、领域路由、来源类型和 Prompt 引用。
-6. 对大仓库、敏感文件、不可读文件和异常输入采取安全且可诊断的行为。
-7. 为后续 Embedding 预留语义分数接口，但第一版不调用外部模型。
+2. 用版本化资产契约显式维护 Prompt、Rules 与 ai-kit 的多对多关系，并机械校验完整性。
+3. 检索 AICoding 的 Rules、ai-kit、Skills、设计文档和工程文档。
+4. 通过可选 `--project` 参数检索真实业务项目代码和 Markdown 文档。
+5. 对 Markdown、Vue、TypeScript 和 JavaScript 做轻量结构化分块。
+6. 使用可解释的确定性混合评分融合标题、符号、路径、正文、领域路由、来源类型和 Prompt 契约引用。
+7. 对大仓库、敏感文件、不可读文件和异常输入采取安全且可诊断的行为。
+8. 为后续 Embedding 预留语义分数接口，但第一版不调用外部模型。
 
 ## 非目标
 
@@ -31,6 +32,8 @@ AICoding 当前通过 `scripts/search-prompts.js` 对 `prompts/` 进行关键词
 
 | 文件 | 职责 |
 | --- | --- |
+| `prompts/asset-contracts.json` | Prompt、Rules 与 ai-kit 的权威多对多映射 |
+| `scripts/prompt-contracts.js` | 加载、校验和审计资产契约，提供独立检查命令 |
 | `scripts/search-prompts.js` | Prompt 检索、CLI、参数校验、结果组装、向后兼容 |
 | `scripts/codebase-scanner.js` | 安全文件发现、忽略规则、文件数量与大小限制、读取告警 |
 | `scripts/codebase-chunker.js` | Markdown/MDC、Vue、TS/JS 结构化分块及降级策略 |
@@ -39,14 +42,60 @@ AICoding 当前通过 `scripts/search-prompts.js` 对 `prompts/` 进行关键词
 数据流如下：
 
 ```text
+资产契约校验 ─────────────────────────→ rules/references/coverage
+
 自然语言查询
-  ├─ 现有 Prompt 检索 ────────────────→ matches
+  ├─ Prompt 检索 + 契约映射 ──────────→ matches
   ├─ AICoding 资产扫描 → 分块 ─┐
   └─ 可选业务项目扫描 → 分块 ──┼→ 统一评分 → 去重/限额 → contexts
                                 └→ warnings
 ```
 
 后续语义检索通过 `hybrid-ranker.js` 的可选语义评分提供器加入总分，不改变 CLI、分块协议和结果协议。第一版不暴露一个虚假的 Embedding 开关；只有在实现语义提供器时才增加对应配置。
+
+## Prompt 资产契约
+
+`prompts/asset-contracts.json` 是 Prompt 与工程资产关系的权威来源。它使用 JSON 而不是 YAML frontmatter，避免新增解析依赖，也避免元数据进入 Prompt 正文和 Prompt Lab 内容。
+
+```json
+{
+  "version": 1,
+  "prompts": {
+    "prompts/charts/line-chart.md": {
+      "rules": [
+        ".cursor/rules/charts/chart.mdc",
+        ".cursor/rules/charts/line-chart.mdc"
+      ],
+      "references": [
+        "src/ai-kit/charts/BaseChart.vue",
+        "src/ai-kit/hooks/useChart.ts",
+        "src/ai-kit/hooks/useRequest.ts"
+      ]
+    },
+    "prompts/git/commit.md": {
+      "rules": [".cursor/rules/global/git.mdc"],
+      "references": [],
+      "noReferenceReason": "Git 提交工作流没有对应的 ai-kit 运行时资产"
+    }
+  }
+}
+```
+
+契约规则：
+
+- `version` 必须严格等于 `1`。
+- `prompts` 的键必须是相对于知识库根目录、以 `prompts/` 开头的 POSIX 路径。
+- 每个非 `readme.md` Prompt 必须且只能有一个契约条目；契约不得指向不存在的 Prompt。
+- `rules` 必须是非空、去重的 `.cursor/rules/**/*.mdc` 路径数组。
+- `references` 必须是去重的 `src/ai-kit/**/*.{vue,ts}` 路径数组。
+- `rules` 与 `references` 中的每条路径必须存在，且解析后仍位于知识库根目录内。
+- `references` 为空时必须提供非空 `noReferenceReason`；非空时不得提供该字段。
+- 全局 `base.mdc` 与 `typescript.mdc` 仍由检索器统一注入，不要求在每个契约中重复声明。
+- 契约声明必须覆盖 Prompt 正文中提取到的 ai-kit 引用；正文存在契约未声明的引用时校验失败，防止双重事实来源漂移。
+
+`scripts/prompt-contracts.js` 导出 `loadPromptContracts(root)` 与 `validatePromptContracts(root)`。前者返回规范化、已校验的 Map；后者返回 `{ errors, warnings, coverage }`，供测试和 `npm run check:prompt-contracts` 使用。错误包括缺失条目、孤儿条目、路径不存在、路径越界、重复项和正文引用漂移。未被任何 Prompt 使用的 Rule 或 ai-kit 只进入 `coverage.unmappedRules`、`coverage.unmappedReferences` 并作为审计告警，不阻断检查，因为底层工具和专用规则不一定需要独立 Prompt。
+
+检索器优先使用契约填充每条 `match.rules` 与 `match.references`，再统一注入全局规则。若运行时遇到缺少契约文件或单条契约缺失，保留现有目录/同名推断和 Prompt 正文引用作为兼容降级，并向结果写入 `CONTRACT_FALLBACK`；仓库自身的 `npm run check` 会把这种状态视为失败，因此正式发布内容不会依赖降级路径。
 
 ## 公开接口
 
@@ -202,7 +251,7 @@ Context 总分由以下信号组成：
 3. 正文命中，对重复次数设置上限。
 4. `ROUTES` 展开的领域词命中。
 5. 来源和类型权重，例如业务代码优先表达业务事实，Rule 优先表达硬约束。
-6. 被前排 Prompt 的 `references` 或 `rules` 显式引用时加权。
+6. 被前排 Prompt 契约的 `references` 或 `rules` 显式映射时加权。
 
 每个正分结果包含稳定、面向用户的 `reasons`，例如：
 
@@ -227,6 +276,7 @@ Context 总分由以下信号组成：
 - `FILE_UNREADABLE`
 - `CHUNK_FAILED`
 - `MAX_FILES_REACHED`
+- `CONTRACT_FALLBACK`
 
 告警不包含文件内容或密钥值。文本 CLI 默认展示告警数量和有限条摘要，JSON 返回全部告警。
 
@@ -240,6 +290,17 @@ Context 总分由以下信号组成：
 - CRUD 查询继续展开列表和表格词。
 - Prompt 引用的 ai-kit 文件继续出现在 `references`。
 - 全局、领域和同名规则继续出现在 `rules`。
+
+### 资产契约测试
+
+- 22 个非索引 Prompt 全部具有唯一契约条目。
+- 契约中的 Prompt、Rule 和 ai-kit 路径都存在且不能越出知识库根目录。
+- Rules 非空、数组内无重复项。
+- ai-kit 为空时必须给出 `noReferenceReason`，非空时禁止该字段。
+- Prompt 正文引用必须被契约引用覆盖。
+- 缺失、孤儿、重复和漂移契约分别产生稳定错误。
+- 未映射 Rules 和 ai-kit 出现在覆盖率审计中，但不导致检查失败。
+- 缺失契约时检索器保留旧推断并产生 `CONTRACT_FALLBACK`。
 
 ### 扫描器测试
 
@@ -261,7 +322,7 @@ Context 总分由以下信号组成：
 - AICoding Rules、ai-kit、Skill 和文档得到正确 `type` 与 `source`。
 - 业务代码得到 `business-code` 和 `business`。
 - 符号命中高于普通正文命中。
-- 前排 Prompt 显式引用得到加权和对应 `reasons`。
+- 前排 Prompt 契约映射得到加权和对应 `reasons`。
 - 相同文件最多返回两个 Context。
 - 无匹配 Context 返回空数组。
 - 原有 `matches` 字段保持兼容。
@@ -271,7 +332,7 @@ Context 总分由以下信号组成：
 
 ## 文档与 Skill 接入
 
-- 更新 README 的检索命令和能力说明。
+- 更新 README 的检索命令、资产契约和能力说明。
 - 更新实际项目接入指南，说明 `--project`、扫描边界和数据不外发。
 - 更新安装生成的 `aicoding-codegen` 指令，使其在业务仓库中调用检索器时传入 `--project .`，并优先读取 `contexts` 中的高分业务代码、Rules 和 ai-kit 文件。
 - AICoding 仍是开发期知识库，生成的业务代码不得导入 AICoding 绝对路径。
