@@ -1,5 +1,5 @@
 ---
-description: 动态表单：Schema 驱动、联动与默认值
+description: 动态表单：Schema 驱动、联动、动态行与默认值
 alwaysApply: false
 ---
 
@@ -8,3 +8,11 @@ alwaysApply: false
 - Schema 变更时重置依赖字段；联动规则可测试、可文档化。
 - 默认值与 options 异步加载时的 loading 与空态。
 - 与后端字段类型映射一致，避免静默截断或精度丢失。
+
+## 动态行（增删行）
+
+- 动态行的表单项 `prop` 必须使用索引路径（`rows.${index}.key`），否则校验状态错乱。
+- 删除行后调用 `formRef.validateField()` 或整体 `resetFields` 清理残留校验。
+- 字段唯一性（如 key 重复）在新增/提交前统一校验，禁止脏数据入库。
+- 增删行时同步维护模型数组长度与校验规则，避免越界访问。
+- 动态行数量设上限并在达到时禁用添加，超出时给出提示。

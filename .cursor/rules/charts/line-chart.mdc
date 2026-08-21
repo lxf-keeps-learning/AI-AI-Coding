@@ -1,5 +1,5 @@
 ---
-description: 折线图：时间轴、断点、多系列与缩放
+description: 折线图：时间轴、断点、多系列、实时刷新与缩放
 alwaysApply: false
 ---
 
@@ -8,3 +8,11 @@ alwaysApply: false
 - 时间粒度与刻度格式化与业务一致；缺失点断线或补零策略明确。
 - 多系列颜色与图例可区分；密集点时可抽样或 dataZoom。
 - 大数据量启用渐进渲染或降采样，保持交互流畅。
+
+## 实时刷新（滚动窗口）
+
+- 轮询定时器必须随组件卸载清理（onUnmounted），图表实例同步 dispose。
+- 使用增量更新（appendData）或最小 setOption，避免全量重设导致闪烁。
+- 保留固定大小的数据窗口，坐标轴跟随最新时间，窗口外数据裁剪。
+- 页面不可见（document.hidden）时暂停轮询，恢复可见后继续，避免后台空转。
+- 首帧显示 loading，刷新过程不闪 loading。

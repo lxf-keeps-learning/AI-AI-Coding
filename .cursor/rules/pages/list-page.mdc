@@ -1,11 +1,12 @@
 ---
-description: 列表页：表格、分页、筛选、空态与加载
+description: 列表页：表格、分页、筛选、空态、加载与操作联动
 alwaysApply: false
 ---
 
-生成列表页时：
+## 列表页标准结构
 
-必须包含：
+生成列表页时，必须包含：
+
 - BaseSearch
 - Table
 - Pagination
@@ -15,6 +16,24 @@ alwaysApply: false
 - types
 
 优先复用：
+
 - useTable
 - BaseSearch
 - Dialog
+
+## 行内操作
+
+- 行内状态切换（开关）必须调接口，失败回滚并提示，切换中该行 loading 防连点。
+- 行内编辑必须使用 `src/ai-kit/forms/BaseForm.vue` 或 `editable-table` 规范，禁止手写复杂编辑状态。
+
+## 批量操作
+
+- 批量删除/启停：未勾选时按钮禁用，勾选后展示已选数量。
+- 批量操作 loading 期间禁止再次提交。
+- 成功后刷新列表并清空选择。
+
+## 左树右表联动
+
+- 点击树节点 → 右侧列表以该节点 id 作为搜索参数刷新。
+- 切树节点时重置分页到第 1 页。
+- 左侧固定宽度（如 240px），右侧 flex:1。

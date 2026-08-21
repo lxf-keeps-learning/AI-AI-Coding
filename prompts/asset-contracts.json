@@ -35,7 +35,7 @@
     },
     "prompts/components/dialog.md": {
       "rules": [".cursor/rules/components/component.mdc", ".cursor/rules/components/dialog.mdc"],
-      "references": ["src/ai-kit/components/BaseDialog.vue", "src/ai-kit/forms/BaseForm.vue", "src/ai-kit/hooks/useDialog.ts"]
+      "references": ["src/ai-kit/components/BaseDialog.vue", "src/ai-kit/forms/BaseForm.vue", "src/ai-kit/hooks/useDialog.ts", "src/ai-kit/hooks/useRequest.ts"]
     },
     "prompts/components/drawer.md": {
       "rules": [".cursor/rules/components/component.mdc", ".cursor/rules/components/drawer.mdc"],
@@ -43,7 +43,7 @@
     },
     "prompts/forms/dynamic-form.md": {
       "rules": [".cursor/rules/forms/form.mdc", ".cursor/rules/forms/dynamic-form.mdc"],
-      "references": ["src/ai-kit/forms/BaseForm.vue", "src/ai-kit/hooks/useRequest.ts"]
+      "references": ["src/ai-kit/forms/BaseForm.vue", "src/ai-kit/hooks/useRequest.ts", "src/ai-kit/components/BaseDialog.vue", "src/ai-kit/hooks/useDialog.ts"]
     },
     "prompts/forms/form.md": {
       "rules": [".cursor/rules/forms/form.mdc"],
@@ -60,12 +60,11 @@
     },
     "prompts/pages/list-page.md": {
       "rules": [".cursor/rules/global/architecture.mdc", ".cursor/rules/pages/list-page.mdc"],
-      "references": ["src/ai-kit/components/list-page-template.vue", "src/ai-kit/hooks/useTable.ts", "src/ai-kit/hooks/useSearch.ts", "src/ai-kit/hooks/useDialog.ts", "src/ai-kit/search/BaseSearch.vue"]
+      "references": ["src/ai-kit/components/list-page-template.vue", "src/ai-kit/hooks/useTable.ts", "src/ai-kit/hooks/useSearch.ts", "src/ai-kit/hooks/useDialog.ts", "src/ai-kit/search/BaseSearch.vue", "src/ai-kit/hooks/useTree.ts", "src/ai-kit/tree/BaseTree.vue"]
     },
     "prompts/performance/large-data.md": {
       "rules": [".cursor/rules/performance/render.mdc", ".cursor/rules/performance/large-data.mdc"],
-      "references": [],
-      "noReferenceReason": "大数据性能 Prompt 是诊断指导，不绑定单一 ai-kit 实现"
+      "references": ["src/ai-kit/hooks/useTable.ts", "src/ai-kit/hooks/useSearch.ts", "src/ai-kit/charts/BaseChart.vue"]
     },
     "prompts/refactor/component.md": {
       "rules": [".cursor/rules/refactor/component-refactor.mdc"],
@@ -79,11 +78,11 @@
     },
     "prompts/search/base-search.md": {
       "rules": [".cursor/rules/search/base-search.mdc"],
-      "references": ["src/ai-kit/search/BaseSearch.vue", "src/ai-kit/hooks/useSearch.ts"]
+      "references": ["src/ai-kit/search/BaseSearch.vue", "src/ai-kit/hooks/useSearch.ts", "src/ai-kit/hooks/useTable.ts", "src/ai-kit/cascade-filter/CascadeFilter.vue"]
     },
     "prompts/table/crud-table.md": {
-      "rules": [".cursor/rules/hooks/use-table.mdc", ".cursor/rules/table/crud-table.mdc"],
-      "references": ["src/ai-kit/hooks/useTable.ts"]
+      "rules": [".cursor/rules/hooks/use-table.mdc", ".cursor/rules/table/crud-table.mdc", ".cursor/rules/table/editable-table.mdc"],
+      "references": ["src/ai-kit/hooks/useTable.ts", "src/ai-kit/components/list-page-template.vue", "src/ai-kit/components/BaseDialog.vue", "src/ai-kit/hooks/useDialog.ts", "src/ai-kit/search/BaseSearch.vue", "src/ai-kit/hooks/useSearch.ts", "src/ai-kit/forms/BaseForm.vue"]
     },
     "prompts/tree/lazy-tree.md": {
       "rules": [".cursor/rules/tree/tree.mdc", ".cursor/rules/tree/lazy-tree.mdc"],
